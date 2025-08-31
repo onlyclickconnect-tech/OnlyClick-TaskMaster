@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, View } from 'react-native';
 import OTPButton from '../../../components/OTP/OTPButton';
 import OTPDisplay from '../../../components/OTP/OTPDisplay';
 import OTPHeader from '../../../components/OTP/OTPHeader';
@@ -111,31 +111,38 @@ export default function OTP() {
   };
 
   return (
-    <View style={styles.container}>
-      <OTPHeader />
-      
-      <View style={styles.content}>
-        <OTPDisplay 
-          otp={otp}
-          activeIndex={activeIndex}
-          inputRef={otpInputRef}
-          onOtpChange={handleOtpChange}
-          error={error}
-        />
-        
-        <OTPResend 
-          countdown={countdown}
-          onResend={handleResend}
-          isLoading={isLoading}
-        />
-        
-        <OTPButton 
-          otpLength={otp.length}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-        />
-      </View>
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.container}>
+          <OTPHeader />
+
+          <View style={styles.content}>
+            <OTPDisplay 
+              otp={otp}
+              activeIndex={activeIndex}
+              inputRef={otpInputRef}
+              onOtpChange={handleOtpChange}
+              error={error}
+            />
+
+            <OTPResend 
+              countdown={countdown}
+              onResend={handleResend}
+              isLoading={isLoading}
+            />
+
+            <OTPButton 
+              otpLength={otp.length}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+            />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 

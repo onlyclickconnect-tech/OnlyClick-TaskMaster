@@ -28,8 +28,7 @@ export default function AadhaarVerify() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      const next = encodeURIComponent('/(app)/protected/(tabs)/Home');
-      router.replace(`/auth/loading?next=${next}&phoneNumber=${encodeURIComponent(phoneNumber)}`);
+      router.replace(`/auth/profile-setup?phoneNumber=${encodeURIComponent(phoneNumber)}`);
     } catch (e) {
       Alert.alert('Error', 'Failed to verify Aadhaar. Please try again.');
     } finally {

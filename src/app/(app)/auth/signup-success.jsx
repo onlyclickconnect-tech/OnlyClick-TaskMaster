@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useAppStates } from '../../../context/AppStates';
 import SuccessHeader from '../../../components/SignUpSuccess/SuccessHeader';
 import SuccessIllustration from '../../../components/SignUpSuccess/SuccessIllustration';
 import SuccessMessage from '../../../components/SignUpSuccess/SuccessMessage';
 import SuccessWelcome from '../../../components/SignUpSuccess/SuccessWelcome';
+import { useAppStates } from '../../../context/AppStates';
 
 export default function SignupSuccess() {
   const { isProfileCompleted } = useAppStates();
@@ -16,8 +16,8 @@ export default function SignupSuccess() {
       if (isProfileCompleted) {
         router.replace('/protected/');
       } else {
-        // Navigate to profile setup (using the Profile tab for now)
-        router.replace('/(app)/protected/(tabs)/Profile');
+        // Navigate to profile setup form
+        router.replace('/auth/profile-setup');
       }
     }, 3000);
 

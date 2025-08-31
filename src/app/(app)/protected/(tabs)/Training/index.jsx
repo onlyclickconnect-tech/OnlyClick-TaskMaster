@@ -1,8 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import AppHeader from "../../../../../components/common/AppHeader";
+import { useRouter } from "expo-router";
 
 export default function index() {
+  const router = useRouter();
+
   return (
     <View>
       <AppHeader title="Training" showBack={true} onBack={() => router.back()} />

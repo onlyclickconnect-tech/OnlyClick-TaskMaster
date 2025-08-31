@@ -200,6 +200,11 @@ export default function AuthProvider({ children }) {
     }
   };
 
+  // Update user data
+  const updateUser = (userData) => {
+    setUser(userData);
+  };
+
   // Logout
   const logout = async () => {
     try {
@@ -254,6 +259,7 @@ export default function AuthProvider({ children }) {
     register,
     verifyRegistrationOTP,
     updateProfile,
+    updateUser,
     logout,
     forgotPassword,
     resetPassword,

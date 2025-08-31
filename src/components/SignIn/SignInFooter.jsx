@@ -3,11 +3,7 @@ import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 
 const SignInFooter = () => {
     return (
-        <Link href="/protected/" asChild>
-            <TouchableOpacity style={styles.skipContainer}>
-                <Text style={styles.skipText}>Continue without login (For development purposes only)</Text>
-            </TouchableOpacity>
-        </Link>
+        <Text style={styles.footerText}>Ann app for the Service Providers</Text>
     );
 };
 
@@ -16,8 +12,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
     },
-    skipText: {
-        color: '#ef1212ff',
+    footerText: {
+        color: '#797777ff',
         fontSize: 12,
         textAlign: 'center',
         paddingBottom: 10,

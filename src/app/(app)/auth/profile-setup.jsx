@@ -1,14 +1,19 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '../../../context/AuthProvider';
-import { useAppStates } from '../../../context/AppStates';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ProfileForm from '../../../components/Profile/ProfileForm';
+import { useAppStates } from '../../../context/AppStates';
+import { useAuth } from '../../../context/AuthProvider';
 
 export default function ProfileSetup() {
   const { user, setUser } = useAuth();
   const { markProfileCompleted } = useAppStates();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  const handleValidationChange = (isValid) => {
+    setIsFormValid(isValid);
+  };
 
   const handleContinue = async () => {
     setIsLoading(true);
@@ -20,7 +25,7 @@ export default function ProfileSetup() {
       // Navigate to main app
       setTimeout(() => {
         setIsLoading(false);
-        router.replace('/(app)/protected/(tabs)/Home');
+        router.replace('/(app)/auth/verification-pending');
       }, 1000);
     } catch (error) {
       setIsLoading(false);
@@ -46,37 +51,41 @@ export default function ProfileSetup() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Complete Your Profile</Text>
-        <Text style={styles.subtitle}>
-          Please fill in your details to get started with TaskMaster
-        </Text>
-      </View>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Complete Your Profile</Text>
+          <Text style={styles.subtitle}>
+            Please fill in your details to get started with TaskMaster
+          </Text>
+        </View>
 
-      <View style={styles.formContainer}>
-        <ProfileForm />
-      </View>
+        <View style={styles.formContainer}>
+          <ProfileForm onValidationChange={handleValidationChange} />
+        </View>
+      </ScrollView>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={styles.continueButton} 
+          style={[styles.continueButton, (!isFormValid || isLoading) && styles.continueButtonDisabled]} 
           onPress={handleContinue}
-          disabled={isLoading}
+          disabled={!isFormValid || isLoading}
         >
-          <Text style={styles.continueButtonText}>
-            {isLoading ? 'Setting up...' : 'Continue to App'}
+          <Text style={[styles.continueButtonText, (!isFormValid || isLoading) && styles.continueButtonTextDisabled]}>
+            {isLoading ? 'Setting up...' : (!isFormValid ? 'Fill Required Fields' : 'Continue to App')}
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.skipButton} 
-          onPress={handleSkip}
-        >
-          <Text style={styles.skipButtonText}>Skip for now</Text>
-        </TouchableOpacity>
       </View>
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -84,6 +93,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 120, // Extra padding for button
   },
   header: {
     paddingHorizontal: 30,
@@ -109,8 +125,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
     padding: 30,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 30,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   continueButton: {
     backgroundColor: '#3898B3',
@@ -124,11 +147,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  continueButtonDisabled: {
+    backgroundColor: '#9fc7c4',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   continueButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  continueButtonTextDisabled: {
+    color: '#ffffff',
   },
   skipButton: {
     paddingVertical: 16,

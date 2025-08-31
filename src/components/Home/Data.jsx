@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from "../../context/AuthProvider";
 
@@ -8,6 +8,13 @@ export default function Data({ userStats, isLoading }) {
   const { user } = useAuth();
   const router = useRouter();
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
+  
+  // Sync isActive with user.isActive
+  useEffect(() => {
+    if (user?.isActive !== undefined) {
+      setIsActive(user.isActive);
+    }
+  }, [user?.isActive]);
   
   // Get user's primary category/niche - default to 'Electrician' if not available
   const userCategory = user?.services?.primaryCategory || user?.primaryCategory || 'Electrician';

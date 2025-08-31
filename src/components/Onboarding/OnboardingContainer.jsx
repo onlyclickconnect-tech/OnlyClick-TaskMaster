@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
 import OnboardingFooter from './OnboardingFooter';
@@ -24,11 +25,12 @@ const slides = [
   }
 ];
 
-const OnboardingContainer = ({ onComplete }) => {
+const OnboardingContainer = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const footerRef = useRef(null);
+  const router = useRouter();
 
   // Defensive: make sure currentSlide points to a valid slide
   const current = slides[currentSlide] ?? null;
@@ -39,20 +41,7 @@ const OnboardingContainer = ({ onComplete }) => {
 
   // Unified completion function
   const handleComplete = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -50,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      onComplete();
-    });
+    router.push('/(app)/auth/terms-privacy');
   };
 
   const handleNext = () => {
