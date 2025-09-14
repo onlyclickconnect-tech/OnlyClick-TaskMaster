@@ -8,30 +8,29 @@ import SignInIllustration from '../../../components/SignIn/SignInIllustration';
 import { useAuth } from '../../../context/AuthProvider';
 
 export default function SignIn() {
-    const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { requestOTP } = useAuth();
 
-    const formatPhoneNumber = (text) => {
-        const digits = text.replace(/\D/g, '');
-        const limitedDigits = digits.slice(0, 10);
-        if (limitedDigits.length > 5) {
-            return limitedDigits.slice(0, 5) + ' ' + limitedDigits.slice(5);
-        }
-        return limitedDigits;
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
-    const handlePhoneChange = (text) => {
-        const formatted = formatPhoneNumber(text);
-        setPhone(formatted);
+    const handleEmailChange = (text) => {
+        setEmail(text);
         if (error) setError('');
     };
 
     const handleSignIn = async () => {
-        const rawPhone = phone.replace(/\s/g, '');
-        if (rawPhone.length < 10) {
-            setError('Please enter a complete 10-digit mobile number');
+        if (!email.trim()) {
+            setError('Please enter your email address');
+            return;
+        }
+
+        if (!validateEmail(email)) {
+            setError('Please enter a valid email address');
             return;
         }
 
@@ -39,13 +38,12 @@ export default function SignIn() {
         setError('');
 
         try {
-            const fullPhoneNumber = `+91${rawPhone}`;
-            const result = await requestOTP(fullPhoneNumber);
+            const result = await requestOTP(email);
             
             if (result.success) {
                 // Directly navigate to OTP (no loading). Loading should only appear after Aadhaar verification.
-                const phoneQ = encodeURIComponent(fullPhoneNumber);
-                router.push(`/auth/otp?phoneNumber=${phoneQ}&type=login`);
+                const emailQ = encodeURIComponent(email);
+                router.push(`/auth/aadharVerify`);
             } else {
                 setError(result.error || 'Failed to send OTP. Please try again.');
             }
@@ -63,9 +61,9 @@ export default function SignIn() {
             <SignInHeader />
             <SignInIllustration />
             <SignInForm 
-                phone={phone}
+                email={email}
                 error={error}
-                onPhoneChange={handlePhoneChange}
+                onEmailChange={handleEmailChange}
                 onSignIn={handleSignIn}
                 isLoading={isLoading}
             />

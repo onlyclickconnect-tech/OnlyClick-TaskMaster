@@ -1,24 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const SignInForm = ({ phone, error, onPhoneChange, onSignIn, isLoading }) => {
+const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading }) => {
     return (
         <View style={styles.content}>
             <Text style={styles.title}>Login to your account</Text>
             
             <View style={styles.inputContainer}>
-                <View style={[styles.phoneInputWrapper, error ? styles.phoneInputError : null]}>
-                    <View style={styles.countryCodeContainer}>
-                        <Text style={styles.flagEmoji}>🇮🇳 </Text>
-                        <Text style={styles.countryCode}>+91</Text>
-                    </View>
+                <View style={[styles.emailInputWrapper, error ? styles.emailInputError : null]}>
                     <TextInput
-                        style={styles.phoneInput}
-                        placeholder="Phone number"
+                        style={styles.emailInput}
+                        placeholder="Email address"
                         placeholderTextColor="#999"
-                        keyboardType="phone-pad"
-                        value={phone}
-                        onChangeText={onPhoneChange}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        value={email}
+                        onChangeText={onEmailChange}
                     />
                 </View>
                 {error ? (
@@ -61,9 +59,7 @@ const styles = StyleSheet.create({
     inputContainer: {
         marginBottom: 20,
     },
-    phoneInputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    emailInputWrapper: {
         backgroundColor: '#f8f9fa',
         borderRadius: 12,
         paddingHorizontal: 16,
@@ -71,34 +67,15 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#e9ecef',
     },
-    phoneInputError: {
+    emailInputError: {
         borderColor: '#FF6B6B',
         backgroundColor: '#FFF5F5',
     },
-    countryCodeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingRight: 12,
-        borderRightWidth: 1,
-        borderRightColor: '#dee2e6',
-        marginRight: 12,
-    },
-    flagEmoji: {
-        fontSize: 16,
-        marginRight: 6,
-    },
-    countryCode: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
-    },
-    phoneInput: {
-        flex: 1,
+    emailInput: {
         fontSize: 18,
         paddingVertical: 16,
         color: '#333',
         fontWeight: '500',
-        letterSpacing: 1,
     },
     errorContainer: {
         flexDirection: 'row',
