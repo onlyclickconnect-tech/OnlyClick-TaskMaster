@@ -60,12 +60,12 @@ export default function AuthProvider({ children }) {
   };
 
   // Login with OTP
-  const loginWithOTP = async (phoneNumber, otp) => {
+  const loginWithOTP = async (email, otp) => {
     try {
       setError("");
       setIsLoading(true);
       
-      const response = await authService.verifyOTP(phoneNumber, otp, 'login');
+      const response = await authService.verifyOTP(email, otp, 'login');
       
       if (response.success) {
         setUser(response.data.user);
@@ -85,10 +85,10 @@ export default function AuthProvider({ children }) {
   };
 
   // Request OTP for login
-  const requestOTP = async (phoneNumber) => {
+  const requestOTP = async (email) => {
     try {
       setError("");
-      const response = await authService.requestOTPLogin(phoneNumber);
+      const response = await authService.requestOTPLogin(email);
       return { success: response.success, message: response.message };
     } catch (error) {
       setError(error.message);

@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import ProfileForm from '../../../components/Profile/ProfileForm';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppStates } from '../../../context/AppStates';
 import { useAuth } from '../../../context/AuthProvider';
 
@@ -9,16 +8,44 @@ export default function ProfileSetup() {
   const { user, setUser } = useAuth();
   const { markProfileCompleted } = useAppStates();
   const [isLoading, setIsLoading] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    category: '',
+    subcategory: '',
+    address: ''
+  });
+  const [errors, setErrors] = useState({});
 
-  const handleValidationChange = (isValid) => {
-    setIsFormValid(isValid);
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.category.trim()) newErrors.category = 'Category is required';
+    if (!formData.subcategory.trim()) newErrors.subcategory = 'Subcategory is required';
+    if (!formData.address.trim()) newErrors.address = 'Address is required';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleContinue = async () => {
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+    
     setIsLoading(true);
     
     try {
+      // Save profile data (you can add API call here later)
+      console.log('Profile data:', formData);
+      
       // Mark profile as completed
       await markProfileCompleted();
       
@@ -70,18 +97,79 @@ export default function ProfileSetup() {
         </View>
 
         <View style={styles.formContainer}>
-          <ProfileForm onValidationChange={handleValidationChange} />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Full Name *</Text>
+            <TextInput
+              style={[styles.input, errors.name && styles.inputError]}
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChangeText={(value) => handleInputChange('name', value)}
+              autoCapitalize="words"
+            />
+            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone Number *</Text>
+            <TextInput
+              style={[styles.input, errors.phone && styles.inputError]}
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onChangeText={(value) => handleInputChange('phone', value)}
+              keyboardType="phone-pad"
+              maxLength={10}
+            />
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Category *</Text>
+            <TextInput
+              style={[styles.input, errors.category && styles.inputError]}
+              placeholder="e.g., Home Services, Professional Services"
+              value={formData.category}
+              onChangeText={(value) => handleInputChange('category', value)}
+              autoCapitalize="words"
+            />
+            {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Subcategory *</Text>
+            <TextInput
+              style={[styles.input, errors.subcategory && styles.inputError]}
+              placeholder="e.g., Plumbing, Electrical, Cleaning"
+              value={formData.subcategory}
+              onChangeText={(value) => handleInputChange('subcategory', value)}
+              autoCapitalize="words"
+            />
+            {errors.subcategory && <Text style={styles.errorText}>{errors.subcategory}</Text>}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Address *</Text>
+            <TextInput
+              style={[styles.textArea, errors.address && styles.inputError]}
+              placeholder="Enter your complete address"
+              value={formData.address}
+              onChangeText={(value) => handleInputChange('address', value)}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+          </View>
         </View>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={[styles.continueButton, (!isFormValid || isLoading) && styles.continueButtonDisabled]} 
-          onPress={handleContinue}
-          disabled={!isFormValid || isLoading}
+          style={[styles.continueButton, isLoading && styles.continueButtonDisabled]} 
+          onPress={handleSave}
+          disabled={isLoading}
         >
-          <Text style={[styles.continueButtonText, (!isFormValid || isLoading) && styles.continueButtonTextDisabled]}>
-            {isLoading ? 'Setting up...' : (!isFormValid ? 'Fill Required Fields' : 'Continue to App')}
+          <Text style={[styles.continueButtonText, isLoading && styles.continueButtonTextDisabled]}>
+            {isLoading ? 'Saving...' : 'Save & Continue'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -122,7 +210,47 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 30,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
+    color: '#1a1a1a',
+  },
+  inputError: {
+    borderColor: '#ff6b6b',
+    backgroundColor: '#fff5f5',
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
+    color: '#1a1a1a',
+    minHeight: 80,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 14,
+    marginTop: 4,
+    fontWeight: '500',
   },
   buttonContainer: {
     position: 'absolute',
