@@ -1,23 +1,46 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Keyboard, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const SignInHeader = () => {
     const handleBack = () => router.back();
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+        const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: keyboardVisible ? 0 : 1,
+            duration: 180,
+            useNativeDriver: true,
+        }).start();
+    }, [keyboardVisible]);
 
     return (
         <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                <Ionicons name="chevron-back" size={24} color="#666" />
-            </TouchableOpacity>
-            <Image
-                source={require('../../../assets/images/logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
-            <TouchableOpacity style={styles.infoButton}>
-                <Ionicons name="information-circle-outline" size={24} color="#666" />
-            </TouchableOpacity>
+            
+
+            <Animated.View style={{ opacity: fadeAnim }}>
+                {!keyboardVisible && (
+                    <Image
+                        source={require('../../../assets/images/logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
+                )}
+            </Animated.View>
+
+            
         </View>
     );
 };
@@ -25,7 +48,7 @@ const SignInHeader = () => {
 const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingTop: 50,
