@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
 import OnboardingFooter from './OnboardingFooter';
 import OnboardingHeader from './OnboardingHeader';
 import OnboardingSlide from './OnboardingSlide';
@@ -27,6 +27,8 @@ const slides = [
 
 const OnboardingContainer = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const footerRef = useRef(null);
@@ -41,14 +43,20 @@ const OnboardingContainer = () => {
 
   // Unified completion function
   const handleComplete = () => {
+    // Prevent double navigation if user taps fast
+    if (isTransitioning || isNavigating) return;
+    setIsNavigating(true);
     router.push('/(app)/auth/terms-privacy');
   };
 
   const handleNext = () => {
+    if (isTransitioning) return; // prevent double clicks/swipes
     if (currentSlide === slides.length - 1) {
       handleComplete();
       return;
     }
+
+    setIsTransitioning(true);
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -78,12 +86,18 @@ const OnboardingContainer = () => {
           duration: 300,
           useNativeDriver: true,
         })
-      ]).start();
+      ]).start(() => {
+        // allow navigation after the incoming slide has finished mounting/animating
+        setIsTransitioning(false);
+      });
     });
   };
 
   const handlePrevious = () => {
+    if (isTransitioning) return; // prevent double clicks/swipes
     if (currentSlide === 0) return;
+
+    setIsTransitioning(true);
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -113,7 +127,9 @@ const OnboardingContainer = () => {
           duration: 300,
           useNativeDriver: true,
         })
-      ]).start();
+      ]).start(() => {
+        setIsTransitioning(false);
+      });
     });
   };
 
@@ -121,8 +137,8 @@ const OnboardingContainer = () => {
   const panResponder = useMemo(() => 
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Disable swiping completely on the last slide
-        if (currentSlide === slides.length - 1) {
+        // Disable swiping completely on the last slide or while transitioning
+        if (currentSlide === slides.length - 1 || isTransitioning) {
           return false;
         }
         return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 100;
@@ -142,7 +158,7 @@ const OnboardingContainer = () => {
           handlePrevious();
         }
       },
-    }), [currentSlide, handleNext, handlePrevious]);
+  }), [currentSlide, handleNext, handlePrevious, isTransitioning]);
 
   return (
     <View style={styles.container}>
@@ -174,7 +190,18 @@ const OnboardingContainer = () => {
         currentSlide={currentSlide}
         totalSlides={slides.length}
         isLastSlide={currentSlide === slides.length - 1}
+        // pass true when transitioning or navigating away to fully disable the button
+        isTransitioning={isTransitioning || isNavigating}
       />
+
+      {/* Overlay to block interactions and show loader while transitioning */}
+      {isTransitioning && (
+        <View style={styles.loadingOverlay} pointerEvents="auto">
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#3898b3" />
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -189,6 +216,19 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: width * 0.01, // 1% of screen width for padding
     paddingVertical: height * 0.01, // 1% of screen height for padding
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 50,
+  },
+  loadingBox: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    padding: 20,
+    borderRadius: 12,
+    elevation: 6,
   },
 });
 

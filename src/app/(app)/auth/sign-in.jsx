@@ -11,6 +11,7 @@ export default function SignIn() {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
     const { requestOTP } = useAuth();
 
     const validateEmail = (email) => {
@@ -24,6 +25,8 @@ export default function SignIn() {
     };
 
     const handleSignIn = async () => {
+        if (isLoading || isNavigating) return; // prevent double taps
+
         if (!email.trim()) {
             setError('Please enter your email address');
             return;
@@ -41,8 +44,9 @@ export default function SignIn() {
             const result = await requestOTP(email);
             
             if (result.success) {
-                // Directly navigate to OTP (no loading). Loading should only appear after Aadhaar verification.
-                const emailQ = encodeURIComponent(email);
+                // Prevent double navigation and mark navigating state
+                setIsNavigating(true);
+                // Directly navigate to Aadhaar verify
                 router.push(`/auth/aadharVerify`);
             } else {
                 setError(result.error || 'Failed to send OTP. Please try again.');
@@ -65,7 +69,7 @@ export default function SignIn() {
                 error={error}
                 onEmailChange={handleEmailChange}
                 onSignIn={handleSignIn}
-                isLoading={isLoading}
+                isLoading={isLoading || isNavigating}
             />
             <SignInFooter />
         </View>

@@ -1,7 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TermsPrivacy() {
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -9,9 +9,14 @@ export default function TermsPrivacy() {
   const [termsExpanded, setTermsExpanded] = useState(false);
   const [privacyExpanded, setPrivacyExpanded] = useState(false);
   const router = useRouter();
+  const [isAccepting, setIsAccepting] = useState(false);
 
   const handleAccept = () => {
+    if (isAccepting) return; // prevent double taps
+
     if (acceptTerms && acceptPrivacy) {
+      setIsAccepting(true);
+      // navigate and leave spinner on; router.replace/ push will change screen
       router.push('/auth/sign-in');
     } else {
       Alert.alert('Error', 'You must accept both Terms & Conditions and Privacy Policy to proceed.');
@@ -228,9 +233,13 @@ If you have questions regarding this Privacy Policy:
         <TouchableOpacity
           style={[styles.acceptButton, !(acceptTerms && acceptPrivacy) && styles.disabledButton]}
           onPress={handleAccept}
-          disabled={!(acceptTerms && acceptPrivacy)}
+          disabled={!(acceptTerms && acceptPrivacy) || isAccepting}
         >
-          <Text style={styles.acceptButtonText}>I Accept</Text>
+          {isAccepting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.acceptButtonText}>I Accept</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
