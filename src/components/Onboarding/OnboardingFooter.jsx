@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSlides, isLastSlide }, ref) => {
+const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSlides, isLastSlide, isTransitioning }, ref) => {
   const buttonAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -13,6 +13,8 @@ const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSl
   }, []);
 
   const handleButtonPress = () => {
+    if (isTransitioning) return; // prevent during transition or navigation
+
     if (isLastSlide) {
       onComplete();
     } else {
@@ -68,10 +70,15 @@ const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSl
           isLastSlide && styles.getStartedButton // Add special styling for last slide button
         ]} 
         onPress={handleButtonPress}
+        disabled={isTransitioning}
       >
-        <Text style={styles.nextButtonText}>
-          {isLastSlide ? 'Get Started' : 'Next'}
-        </Text>
+        {isTransitioning ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.nextButtonText}>
+            {isLastSlide ? 'Get Started' : 'Next'}
+          </Text>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );

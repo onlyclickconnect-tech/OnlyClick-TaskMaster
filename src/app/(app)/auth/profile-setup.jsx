@@ -13,7 +13,6 @@ export default function ProfileSetup() {
     name: '',
     phone: '',
     category: '',
-    subcategory: '',
     address: ''
   });
   const [errors, setErrors] = useState({});
@@ -26,7 +25,6 @@ export default function ProfileSetup() {
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
     if (!formData.category.trim()) newErrors.category = 'Category is required';
-    if (!formData.subcategory.trim()) newErrors.subcategory = 'Subcategory is required';
     if (!formData.address.trim()) newErrors.address = 'Address is required';
     
     setErrors(newErrors);
@@ -142,24 +140,12 @@ export default function ProfileSetup() {
             <Text style={styles.label}>Category *</Text>
             <TextInput
               style={[styles.input, errors.category && styles.inputError]}
-              placeholder="e.g., Home Services, Professional Services"
+              placeholder="e.g. Plumber, Electrician"
               value={formData.category}
               onChangeText={(value) => handleInputChange('category', value)}
               autoCapitalize="words"
             />
             {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Subcategory *</Text>
-            <TextInput
-              style={[styles.input, errors.subcategory && styles.inputError]}
-              placeholder="e.g., Plumbing, Electrical, Cleaning"
-              value={formData.subcategory}
-              onChangeText={(value) => handleInputChange('subcategory', value)}
-              autoCapitalize="words"
-            />
-            {errors.subcategory && <Text style={styles.errorText}>{errors.subcategory}</Text>}
           </View>
 
           <View style={styles.inputGroup}>
