@@ -14,24 +14,41 @@ export const AppStatesProvider = ({ children }) => {
 
   useEffect(() => {
     const getAppFirstOpenState = async () => {
-      const appFirstOpenState = await AsyncStorage.getItem("appFirstOpenState");
-      setIsAppOpenedFirstTime(appFirstOpenState === null);
+      try {
+        const appFirstOpenState = await AsyncStorage.getItem("appFirstOpenState");
+        console.log("App first open state from storage:", appFirstOpenState);
+        setIsAppOpenedFirstTime(appFirstOpenState !== "false");
+      } catch (error) {
+        console.error("Error getting app first open state:", error);
+        setIsAppOpenedFirstTime(true);
+      }
     };
     getAppFirstOpenState();
   }, []);
 
   useEffect(() => {
     const getProfileCompletedState = async () => {
-      const profileCompletedState = await AsyncStorage.getItem("profileCompleted");
-      setIsProfileCompleted(profileCompletedState === "true");
+      try {
+        const profileCompletedState = await AsyncStorage.getItem("profileCompleted");
+        console.log("Profile completed state from storage:", profileCompletedState);
+        setIsProfileCompleted(profileCompletedState === "true");
+      } catch (error) {
+        console.error("Error getting profile completed state:", error);
+        setIsProfileCompleted(false);
+      }
     };
     getProfileCompletedState();
   }, []);
 
   useEffect(() => {
-    if (isAppOpenedFirstTime === false) {
+    if (isAppOpenedFirstTime !== null) {
       const setAppFirstOpenState = async () => {
-        await AsyncStorage.setItem("appFirstOpenState", "false");
+        try {
+          await AsyncStorage.setItem("appFirstOpenState", isAppOpenedFirstTime ? "true" : "false");
+          console.log("App first open state set to:", isAppOpenedFirstTime ? "true" : "false");
+        } catch (error) {
+          console.error("Error setting app first open state:", error);
+        }
       };
       setAppFirstOpenState();
     }
@@ -40,6 +57,12 @@ export const AppStatesProvider = ({ children }) => {
   const markProfileCompleted = async () => {
     await AsyncStorage.setItem("profileCompleted", "true");
     setIsProfileCompleted(true);
+  };
+  
+  const markAppOpened = async () => {
+    await AsyncStorage.setItem("appFirstOpenState", "false");
+    setIsAppOpenedFirstTime(false);
+    console.log("App marked as not first time open");
   };
 
   return (
@@ -50,6 +73,7 @@ export const AppStatesProvider = ({ children }) => {
         isProfileCompleted,
         setIsProfileCompleted,
         markProfileCompleted,
+        markAppOpened,
         selectedLocation,
         updateSelectedLocation
       }}

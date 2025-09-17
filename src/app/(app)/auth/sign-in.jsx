@@ -1,18 +1,26 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { StatusBar, View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StatusBar, View, Alert } from 'react-native';
 import SignInFooter from '../../../components/SignIn/SignInFooter';
 import SignInForm from '../../../components/SignIn/SignInForm';
 import SignInHeader from '../../../components/SignIn/SignInHeader';
 import SignInIllustration from '../../../components/SignIn/SignInIllustration';
 import { useAuth } from '../../../context/AuthProvider';
+import * as Linking from 'expo-linking';
 
 export default function SignIn() {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isNavigating, setIsNavigating] = useState(false);
-    const { requestOTP } = useAuth();
+    const { requestLinkOTP, isLoggedIn } = useAuth();
+    
+    // If user is already logged in, redirect to home
+    useEffect(() => {
+        if (isLoggedIn) {
+            console.log('User already logged in, redirecting to home');
+            router.replace('/(app)/protected/(tabs)/Home');
+        }
+    }, [isLoggedIn]);
 
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,18 +49,19 @@ export default function SignIn() {
         setError('');
 
         try {
-            const result = await requestOTP(email);
+            const result = await requestLinkOTP(email);
             
             if (result.success) {
-                // Prevent double navigation and mark navigating state
-                setIsNavigating(true);
-                // Directly navigate to Aadhaar verify
-                router.push(`/auth/aadharVerify`);
+                Alert.alert(`Email Send Successfully to ${email}`)
+                // Directly navigate to OTP (no loading). Loading should only appear after Aadhaar verification.
+                // const emailQ = encodeURIComponent(email);
+                // For now aadhar is not verified automatically instead manual verification will be done.
+                // router.push(`/auth/aadharVerify`); 
             } else {
                 setError(result.error || 'Failed to send OTP. Please try again.');
             }
         } catch (error) {
-            console.error('Sign in error:', error);
+            console.error('Sign in error:', error.message);
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setIsLoading(false);
@@ -65,6 +74,7 @@ export default function SignIn() {
             <SignInHeader />
             <SignInIllustration />
             <SignInForm 
+                setIsLoading={setIsLoading}
                 email={email}
                 error={error}
                 onEmailChange={handleEmailChange}

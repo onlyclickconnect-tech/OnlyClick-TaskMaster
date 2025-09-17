@@ -32,10 +32,12 @@ yarn-error.*
 
 # local env files
 .env*.local
+# Add this to your .gitignore
+.env
+.env.local
+.env.*
 
 # typescript
 *.tsbuildinfo
 
 app-example
-.env
-.env.*

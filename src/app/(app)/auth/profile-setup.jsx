@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppStates } from '../../../context/AppStates';
 import { useAuth } from '../../../context/AuthProvider';
+import supabaseAuthService from '../../../services/supabaseAuthService';
 
 export default function ProfileSetup() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, authToken } = useAuth();
   const { markProfileCompleted } = useAppStates();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,6 +16,8 @@ export default function ProfileSetup() {
     address: ''
   });
   const [errors, setErrors] = useState({});
+
+  // console.log(authToken);
 
   const validateForm = () => {
     const newErrors = {};
@@ -41,8 +44,19 @@ export default function ProfileSetup() {
     setIsLoading(true);
     
     try {
-      // Save profile data (you can add API call here later)
-      console.log('Profile data:', formData);
+      if (!user || !user.id) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Save profile data to Supabase  attention
+      const saveResponse = await supabaseAuthService.saveUserProfile(user.id, {
+        name: formData.name,
+        // Add other fields as needed
+      });
+      
+      if (!saveResponse.success) {
+        throw new Error(saveResponse.message || 'Failed to save profile');
+      }
       
       // Mark profile as completed
       await markProfileCompleted();
@@ -50,30 +64,32 @@ export default function ProfileSetup() {
       // Navigate to main app
       setTimeout(() => {
         setIsLoading(false);
-        router.replace('/(app)/auth/verification-pending');
+        router.replace('/(app)/protected/(tabs)/Home');
       }, 1000);
     } catch (error) {
       setIsLoading(false);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
     }
   };
 
-  const handleSkip = () => {
-    Alert.alert(
-      "Skip Profile Setup",
-      "You can complete your profile later from the Profile tab. Continue?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Skip", 
-          onPress: async () => {
-            await markProfileCompleted();
-            router.replace('/(app)/protected/(tabs)/Home');
-          }
-        }
-      ]
-    );
-  };
+
+  // profile skip not needed as of now
+  // const handleSkip = () => {
+  //   Alert.alert(
+  //     "Skip Profile Setup",
+  //     "You can complete your profile later from the Profile tab. Continue?",
+  //     [
+  //       { text: "Cancel", style: "cancel" },
+  //       { 
+  //         text: "Skip", 
+  //         onPress: async () => {
+  //           await markProfileCompleted();
+  //           router.replace('/(app)/protected/(tabs)/Home');
+  //         }
+  //       }
+  //     ]
+  //   );
+  // };
 
   return (
     <KeyboardAvoidingView 

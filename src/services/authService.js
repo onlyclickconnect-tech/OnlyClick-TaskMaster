@@ -83,8 +83,19 @@ class AuthService {
 
   // Check if user is authenticated
   async isAuthenticated() {
-    // Always return true for dummy mode
-    return true;
+    // For development purposes, we should check if there's a valid session
+    // instead of always returning true
+    console.log('Checking authentication status...');
+    
+    // Check if we have a stored token or session
+    try {
+      // In a real app, we would check for a valid token
+      // For now, return false to force login
+      return false;
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
   }
 }
 
