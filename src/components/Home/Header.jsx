@@ -34,18 +34,18 @@ function Header() {
   const { selectedLocation, updateSelectedLocation } = useAppStates();
   const router = useRouter();
   const styles = headerStyle();
-  
+
   const searchService = async () => {
     console.log("user searched");
   };
-  
+
   useEffect(() => {
     if (userAddress && (!selectedLocation || selectedLocation === "Tap to set location")) {
       updateSelectedLocation(userAddress);
     }
     setManualLocation(selectedLocation || "");
   }, [userAddress, selectedLocation]);
-  
+
   // Use LocationService for robust location fetching with fallback
   const getCurrentLocation = async () => {
     setIsLocationLoading(true);
@@ -114,14 +114,14 @@ function Header() {
     }
     setIsLocationLoading(false);
   };
-  
+
   const saveManualLocation = () => {
     if (manualLocation && manualLocation.trim()) {
       updateSelectedLocation(manualLocation.trim());
       setShowLocationModal(false);
     }
   };
-  
+
   const changeAddress = () => {
     setShowLocationModal(true);
   };
@@ -165,7 +165,7 @@ function Header() {
       pan.current.setValue(0);
     }
   }, [showLocationModal]);
-  
+
   return (
     <>
       {/* Location Modal */}
@@ -198,17 +198,17 @@ function Header() {
 
             <View style={modalStyles.modalContent}>
               {/* Current Location Option */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[modalStyles.locationOption, isLocationLoading && modalStyles.locationOptionDisabled]}
                 onPress={getCurrentLocation}
                 disabled={isLocationLoading}
               >
                 <View style={modalStyles.locationOptionLeft}>
                   <View style={modalStyles.locationIconContainer}>
-                    <Ionicons 
-                      name={isLocationLoading ? "refresh" : "location"} 
-                      size={20} 
-                      color="#3898B3" 
+                    <Ionicons
+                      name={isLocationLoading ? "refresh" : "location"}
+                      size={20}
+                      color="#3898B3"
                     />
                   </View>
                   <View>
@@ -242,14 +242,14 @@ function Header() {
 
               {/* Action Buttons */}
               <View style={modalStyles.buttonContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={modalStyles.cancelButton}
                   onPress={() => setShowLocationModal(false)}
                 >
                   <Text style={modalStyles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[
                     modalStyles.saveButton,
                     (!manualLocation || !manualLocation.trim()) && modalStyles.saveButtonDisabled
@@ -265,92 +265,90 @@ function Header() {
         </TouchableOpacity>
       </Modal>
 
-    <LinearGradient colors={["#3898B3", "#47adcaff"]} style={styles.header}>
-      <View style={styles.locationAndNotification}>
-        <View style={styles.location}>
-          <Text style={{ fontSize: 14, color: "white", fontWeight: "500" }}>Location</Text>
-          <TouchableOpacity style={styles.locationText} onPress={changeAddress}>
-            {/*TODO:  */}
-            <Entypo 
-              name="location-pin" 
-              size={21} // Reduced from 24
-              color={isLocationLoading ? "#FFE082" : "#f8bd00"} 
+      <LinearGradient colors={["#3898B3", "#47adcaff"]} style={styles.header}>
+        <View style={styles.locationAndNotification}>
+          <View style={styles.location}>
+            <Text style={{ fontSize: 14, color: "white", fontWeight: "500" }}>Location</Text>
+            <TouchableOpacity style={styles.locationText} onPress={changeAddress}>
+              {/*TODO:  */}
+              <Entypo
+                name="location-pin"
+                size={21} // Reduced from 24
+                color={isLocationLoading ? "#FFE082" : "#f8bd00"}
+              />
+              <Text style={{ fontSize: 12, color: "white", flex: 1, fontWeight: "400" }}>
+                {isLocationLoading ? "Getting location..." : selectedLocation || "Tap to set location"}
+              </Text>
+              <AntDesign
+                name="down"
+                size={11} // Reduced from 12
+                style={{ fontWeight: "bold" }}
+                color="#f8bd00"
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.notification}>
+            <Badge
+              pressable={true}
+              onPress={() => {
+                // console.log("Pressed");
+                router.navigate("/protected/Notifications");
+              }}
+              hasBadge={hasNotification}
+              style={{
+                height: screenHeight * 0.18 * 0.25, // Updated for smaller header
+                width: screenWidth * 0.09, // Slightly smaller width
+                backgroundColor: "#409aceff",
+                border: 1,
+                borderRadius: 8, // Increased border radius
+              }}
+              badgeSize={12} // Reduced badge size
+              badgeColor={"red"}
+              badgeTop={-4} // Adjusted position
+              badgeRight={-4} // Adjusted position
+              textColor="white"
+              withNumbers={false}
+              element={<Ionicons name="notifications" size={25} color="white" />} // Reduced icon size
             />
-            <Text style={{ fontSize: 12, color: "white", flex: 1, fontWeight: "400" }}>
-              {isLocationLoading ? "Getting location..." : selectedLocation || "Tap to set location"}
-            </Text>
-            <AntDesign
-              name="down"
-              size={11} // Reduced from 12
-              style={{ fontWeight: "bold" }}
-              color="#f8bd00"
+          </View>
+        </View>
+
+        {/* search and profile */}
+        <View style={styles.searchAndProfile}>
+          <View style={styles.search}>
+            <View
+              style={{
+                height: 25, // Reduced from 30
+                width: 25, // Reduced from 30
+                position: "absolute",
+                left: 20,
+                zIndex: 1,
+              }}
+            >
+              <FontAwesome name="search" size={18} color="#30a7c8ff" /> {/* Reduced from 24 */}
+            </View>
+            <TextInput
+              placeholder="Search"
+              style={styles.searchText}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+              placeholderTextColor="grey"
+              onSubmitEditing={searchService}
             />
+          </View>
+          <TouchableOpacity
+            style={styles.profile}
+            onPress={() => {
+              // Navigate to the Profile tab in the protected app tabs
+              router.push('/(app)/protected/(tabs)/Profile');
+            }}
+            accessibilityLabel="Open profile"
+          >
+            <Ionicons name="person-sharp" size={28} color="#07689f" borderRadius={15} padding={5} backgroundColor="#ffffffff" />
           </TouchableOpacity>
         </View>
-        <View style={styles.notification}>
-          <Badge
-            pressable={true}
-            onPress={() => {
-              // console.log("Pressed");
-              router.navigate("/protected/Notifications");
-            }}
-            hasBadge={hasNotification}
-            style={{
-              height: screenHeight * 0.18 * 0.25, // Updated for smaller header
-              width: screenWidth * 0.09, // Slightly smaller width
-              backgroundColor: "#409aceff",
-              border: 1,
-              borderRadius: 8, // Increased border radius
-            }}
-            badgeSize={12} // Reduced badge size
-            badgeColor={"red"}
-            badgeTop={-4} // Adjusted position
-            badgeRight={-4} // Adjusted position
-            textColor="white"
-            withNumbers={false}
-            element={<Ionicons name="notifications" size={25} color="white" />} // Reduced icon size
-          />
-        </View>
-      </View>
-
-      {/* search and profile */}
-      <View style={styles.searchAndProfile}>
-        <View style={styles.search}>
-          <View
-            style={{
-              height: 25, // Reduced from 30
-              width: 25, // Reduced from 30
-              position: "absolute",
-              left: 20,
-              zIndex: 1,
-            }}
-          >
-            <FontAwesome name="search" size={18} color="#30a7c8ff" /> {/* Reduced from 24 */}
-          </View>
-          <TextInput
-            placeholder="Search"
-            style={styles.searchText}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            returnKeyType="search"
-            placeholderTextColor={"grey"}
-            onSubmitEditing={searchService}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.profile}
-          onPress={() => {
-            // Navigate to the Profile tab in the protected app tabs
-            router.push('/(app)/protected/(tabs)/Profile');
-          }}
-          accessibilityLabel="Open profile"
-        >
-          <Ionicons name="person-sharp" size={28} color="#07689f"  borderRadius={15} padding={5} backgroundColor="#ffffffff"/>
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
+      </LinearGradient>
     </>
   );
 }

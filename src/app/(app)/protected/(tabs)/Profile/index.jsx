@@ -23,7 +23,7 @@ import { useAuth } from '../../../../../context/AuthProvider';
 import AppHeader from '../../../../../components/common/AppHeader';
 
 export default function ProfilePage() {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, isLoggedIn, userData } = useAuth();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(true);
@@ -40,6 +40,16 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    const getdata = async () => {
+      const { data, error } = await supabase.auth.session();
+
+      console.error("data", data.session);
+      console.error("error", error);
+    }
+    getdata();
+  }, [isLoggedIn,user])
+
+  useEffect(() => {
     (async () => {
       const cameraStatus = await Camera.requestCameraPermissionsAsync();
       const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,11 +58,11 @@ export default function ProfilePage() {
     })();
     // initialise editable fields from user and displayUser
     if (user) {
-      setEditableName(user.name || '');
-      setEditablePhone(user.phoneNumber || '');
-      setEditableCategory(user.category || '');
-      setProfileImageUri(user.profileImage || null);
-      setDisplayUser(user);
+      setEditableName(userData?.name || '');
+      setEditablePhone(userData?.ph_no || '');
+      setEditableCategory(userData?.category || '');
+      setProfileImageUri(userData?.tm_profilepic || null);
+      setDisplayUser(userData);
     }
   }, []);
 
@@ -168,7 +178,7 @@ export default function ProfilePage() {
 
   const handleCancelEdit = () => {
     // revert local edits
-    setEditableName(displayUser?.name || user?.name || '');
+    setEditableName(displayUser?.name || userData?.name || '');
     setEditablePhone(displayUser?.phoneNumber || user?.phoneNumber || '');
     setEditableCategory(displayUser?.category || user?.category || '');
     setProfileImageUri(displayUser?.profileImage || user?.profileImage || null);
@@ -233,7 +243,7 @@ export default function ProfilePage() {
   ];
 
   const handleBack = () => router.back();
-  
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -260,7 +270,7 @@ export default function ProfilePage() {
           <View style={styles.profileInfo}>
             {/* live preview header - updates from state while editing */}
             {(() => {
-              const displayName = editMode ? (editableName || displayUser?.name || user?.name || 'TaskMaster User') : (displayUser?.name || user?.name || 'TaskMaster User');
+              const displayName = editMode ? (editableName || displayUser?.name || userData?.name || 'TaskMaster User') : (displayUser?.name || userData?.name || 'TaskMaster User');
               const displayCategory = editMode ? (editableCategory || displayUser?.category || user?.category || 'Service Provider') : (displayUser?.category || user?.category || 'Service Provider');
               const displayPhone = editMode ? (editablePhone || displayUser?.phoneNumber || user?.phoneNumber || '+91 XXXXXXXXXX') : (displayUser?.phoneNumber || user?.phoneNumber || '+91 XXXXXXXXXX');
               const displayImage = editMode ? (profileImageUri || displayUser?.profileImage || user?.profileImage) : (displayUser?.profileImage || user?.profileImage || profileImageUri);
@@ -361,9 +371,9 @@ export default function ProfilePage() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-             <Text style={styles.statNumber} numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>₹45,670</Text>
-             <Text style={styles.statLabel}>Total Earned</Text>
-           </View>
+            <Text style={styles.statNumber} numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>₹45,670</Text>
+            <Text style={styles.statLabel}>Total Earned</Text>
+          </View>
         </View>
 
         {/* Settings Section */}

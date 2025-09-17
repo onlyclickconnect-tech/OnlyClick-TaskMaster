@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import { useAuth } from '../../context/AuthProvider';
 
-const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading }) => {
+const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading, setIsLoading }) => {
+  const { requestOTP } = useAuth();
     return (
         <View style={styles.content}>
             <Text style={styles.title}>Login to your account</Text>

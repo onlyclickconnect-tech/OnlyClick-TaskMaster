@@ -1,36 +1,130 @@
+import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import authService from "../services/authService";
+import supabaseAuthService from "../services/supabaseAuthService";
 import userService from "../services/userService";
 import { removeUserDetails, setUserDetails } from "../utils/storage";
+import { useAppStates } from "./AppStates";
 
 const AuthContext = createContext();
 
 export default function AuthProvider({ children }) {
+  const { markAppOpened } = useAppStates();
   const [user, setUser] = useState(null);
   const [authToken, setAuthToken] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userData, setUserData] = useState();
+  const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
   // Initialize authentication state
   const initializeAuth = async () => {
     try {
       setIsLoading(true);
-      const isAuthenticated = await authService.isAuthenticated();
-      
-      if (isAuthenticated) {
-        const userResponse = await authService.getCurrentUser();
-        if (userResponse.success) {
-          setUser(userResponse.data.user);
-          setIsLoggedIn(true);
-          await setUserDetails(userResponse.data.user);
-        }
+      console.log('Initializing authentication...');
+
+      // Check for existing Supabase session
+      const sessionResponse = await supabaseAuthService.getSession();
+      console.log('Supabase session check:', sessionResponse.success ? 'Success' : 'Failed');
+
+      if (sessionResponse.success && sessionResponse.session) {
+        console.log('Valid Supabase session found');
+        console.log(sessionResponse.response);
+
+        setUser(sessionResponse.user);
+        setUserData(sessionResponse.userData)
+        setIsLoggedIn(true);
+        setAuthToken(sessionResponse.session.access_token);
+        setNeedsProfileSetup(sessionResponse.needsProfileSetup || false);
+        await setUserDetails(sessionResponse.user);
+
+        // Mark app as opened (not first time)
+        await markAppOpened();
+
+        console.log("user Data from auth provider :", sessionResponse.userData)
+        console.log("needs profile setup:", sessionResponse.needsProfileSetup)
+
+        // Note: Routing logic moved to index.tsx to prevent conflicts
+        // The index.tsx will check userData and route appropriately
+
+      } else {
+        console.log('No authenticated session found');
+        setIsLoggedIn(false);
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
       await logout(); // Clear any invalid tokens
     } finally {
       setIsLoading(false);
+      console.log('Auth initialization complete, isLoggedIn:', isLoggedIn);
+    }
+  };
+
+  // Handle deep links
+  const handleDeepLink = async (url) => {
+    console.log(url);
+    try {
+      if (!url) return;
+
+      console.log('Handling deep link:', url);
+
+      // Check if this is an auth deep link - more permissive check
+      if (url.includes('access_token') || url.includes('refresh_token')) {
+        setIsLoading(true);
+
+        // Process the deep link to extract tokens and set session
+        const response = await supabaseAuthService.processDeepLink(url);
+
+        if (response.success) {
+          console.log('Deep link authentication successful');
+          setUser(response.user);
+          setIsLoggedIn(true);
+          setUserData(response.userData)
+          setAuthToken(response.session.access_token);
+          setNeedsProfileSetup(response.needsProfileSetup || false);
+          await setUserDetails(response.user);
+
+          // Mark app as opened (not first time)
+          await markAppOpened();
+
+          console.log("Deep link user data:", response.userData);
+          console.log("Deep link needs profile setup:", response.needsProfileSetup);
+
+          // Note: Routing logic moved to index.tsx to prevent conflicts
+          // The index.tsx will check userData and route appropriately
+        } else {
+          console.error('Deep link authentication failed:', response.message);
+          setError(response.message || 'Failed to authenticate');
+        }
+
+        setIsLoading(false);
+      } else {
+        console.log('URL does not contain authentication tokens');
+        setIsLoggedIn(false);
+      }
+    } catch (error) {
+      console.error('Deep link handling error:', error);
+      setError(error.message);
+      setIsLoading(false);
+      // setIsLoggedIn(false);
+    }
+  };
+
+  // Check if user profile exists and redirect if needed
+  const checkUserProfile = async (userId) => {
+    try {
+      const profileResponse = await supabaseAuthService.checkUserProfile(userId);
+
+      if (profileResponse.success) {
+        if (!profileResponse.exists) {
+          // Profile doesn't exist, redirect to profile setup
+          router.replace('/auth/profile-setup');
+        }
+      }
+    } catch (error) {
+      console.error('Profile check error:', error);
     }
   };
 
@@ -39,9 +133,9 @@ export default function AuthProvider({ children }) {
     try {
       setError("");
       setIsLoading(true);
-      
+
       const response = await authService.login(phoneNumber, password);
-      
+
       if (response.success) {
         setUser(response.data.user);
         setIsLoggedIn(true);
@@ -49,7 +143,7 @@ export default function AuthProvider({ children }) {
         await setUserDetails(response.data.user);
         return { success: true, user: response.data.user };
       }
-      
+
       throw new Error(response.message || 'Login failed');
     } catch (error) {
       setError(error.message);
@@ -64,9 +158,9 @@ export default function AuthProvider({ children }) {
     try {
       setError("");
       setIsLoading(true);
-      
+
       const response = await authService.verifyOTP(email, otp, 'login');
-      
+
       if (response.success) {
         setUser(response.data.user);
         setIsLoggedIn(true);
@@ -74,7 +168,7 @@ export default function AuthProvider({ children }) {
         await setUserDetails(response.data.user);
         return { success: true, user: response.data.user };
       }
-      
+
       throw new Error(response.message || 'OTP verification failed');
     } catch (error) {
       setError(error.message);
@@ -85,13 +179,19 @@ export default function AuthProvider({ children }) {
   };
 
   // Request OTP for login
-  const requestOTP = async (email) => {
+  const requestLinkOTP = async (email) => {
     try {
       setError("");
-      const response = await authService.requestOTPLogin(email);
+      setIsLoading(true);
+
+      // Use Supabase magic link
+      const response = await supabaseAuthService.sendMagicLink(email);
+
+      setIsLoading(false);
       return { success: response.success, message: response.message };
     } catch (error) {
       setError(error.message);
+      setIsLoading(false);
       return { success: false, error: error.message };
     }
   };
@@ -101,18 +201,18 @@ export default function AuthProvider({ children }) {
     try {
       setError("");
       setIsLoading(true);
-      
+
       const response = await authService.register(userData);
-      
+
       if (response.success) {
         // Don't auto-login after registration, require OTP verification
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message,
-          requiresVerification: response.data?.requiresVerification 
+          requiresVerification: response.data?.requiresVerification
         };
       }
-      
+
       throw new Error(response.message || 'Registration failed');
     } catch (error) {
       setError(error.message);
@@ -127,9 +227,9 @@ export default function AuthProvider({ children }) {
     try {
       setError("");
       setIsLoading(true);
-      
+
       const response = await authService.verifyOTP(phoneNumber, otp, 'registration');
-      
+
       if (response.success) {
         setUser(response.data.user);
         setIsLoggedIn(true);
@@ -137,7 +237,7 @@ export default function AuthProvider({ children }) {
         await setUserDetails(response.data.user);
         return { success: true, user: response.data.user };
       }
-      
+
       throw new Error(response.message || 'OTP verification failed');
     } catch (error) {
       setError(error.message);
@@ -208,14 +308,17 @@ export default function AuthProvider({ children }) {
   // Logout
   const logout = async () => {
     try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      // Sign out from Supabase
+      await supabaseAuthService.signOut();
       setUser(null);
       setIsLoggedIn(false);
       setAuthToken("");
       await removeUserDetails();
+      router.replace('/auth/sign-in')
+      // Also call legacy logout if needed
+      // await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
@@ -244,7 +347,35 @@ export default function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    // Initialize auth state
     initializeAuth();
+
+    // Set up deep link handler for when app is already open
+    const subscription = Linking.addEventListener('url', (event) => {
+      const url = event.url;
+      console.log('Deep link received while app is open:', url);
+
+      // Force immediate processing of the deep link
+      if (url) {
+        // Use setTimeout to ensure this runs after the current execution context
+        setTimeout(() => {
+          handleDeepLink(url);
+        }, 0);
+      }
+    });
+
+    // Check for initial URL (app opened via deep link)
+    Linking.getInitialURL().then(url => {
+      console.log("deep link opeaned the app.");
+      if (url) {
+        console.log('App opened via deep link:', url);
+        handleDeepLink(url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const value = useMemo(() => ({
@@ -255,7 +386,7 @@ export default function AuthProvider({ children }) {
     error,
     login,
     loginWithOTP,
-    requestOTP,
+    requestLinkOTP,
     register,
     verifyRegistrationOTP,
     updateProfile,
@@ -264,7 +395,10 @@ export default function AuthProvider({ children }) {
     forgotPassword,
     resetPassword,
     setError,
-  }), [user, authToken, isLoggedIn, isLoading, error]);
+    userData,
+    setUserData,
+    needsProfileSetup
+  }), [user, authToken, isLoggedIn, isLoading, error, userData, needsProfileSetup]);
 
   return (
     <AuthContext.Provider value={value}>

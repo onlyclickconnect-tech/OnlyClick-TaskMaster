@@ -1,16 +1,24 @@
-import { ScrollView, StyleSheet, RefreshControl } from "react-native";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
+import Data from "../../../../../components/Home/Data";
 import Header from "../../../../../components/Home/Header";
 import Info from "../../../../../components/Home/Info";
-import Data from "../../../../../components/Home/Data";
 import { useAuth } from "../../../../../context/AuthProvider";
-
 export default function Home() {
-  const { user } = useAuth();
+  const { user, isLoggedIn, userData } = useAuth();
   const [userStats, setUserStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+
+  useEffect(() => {
+    const getdata = async () => {
+      console.log("user data from home",userData);
+    }
+    getdata()
+  }, [userData])
+
 
   const fetchDashboardData = async () => {
     try {
@@ -51,18 +59,18 @@ export default function Home() {
   }, []);
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Header/>
+      <Header />
       <Info userStats={userStats} isLoading={isLoading} />
-      <Data 
-        recentBookings={recentBookings} 
+      <Data
+        recentBookings={recentBookings}
         userStats={userStats}
-        isLoading={isLoading} 
+        isLoading={isLoading}
       />
     </ScrollView>
   );
