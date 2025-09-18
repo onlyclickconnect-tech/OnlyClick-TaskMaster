@@ -190,9 +190,9 @@ export default function AuthProvider({ children }) {
       setIsLoading(false);
       return { success: response.success, message: response.message };
     } catch (error) {
-      setError(error.message);
+      setError(error);
       setIsLoading(false);
-      return { success: false, error: error.message };
+      return { success: false, error: error };
     }
   };
 
@@ -397,7 +397,8 @@ export default function AuthProvider({ children }) {
     setError,
     userData,
     setUserData,
-    needsProfileSetup
+    needsProfileSetup,
+    setNeedsProfileSetup
   }), [user, authToken, isLoggedIn, isLoading, error, userData, needsProfileSetup]);
 
   return (

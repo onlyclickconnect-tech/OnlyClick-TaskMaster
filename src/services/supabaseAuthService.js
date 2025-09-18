@@ -1,5 +1,7 @@
+import api from '../app/api/api.js';
 import { requestAuthLink } from '../app/api/requestAuthLink.js';
 import { supabase } from '../data/supabaseClient';
+import { updateTM } from '../app/api/updateTM.js'
 
 class SupabaseAuthService {
   // Send magic link to email
@@ -30,7 +32,7 @@ class SupabaseAuthService {
       console.error('Error sending magic link:', error?.message);
       return {
         success: false,
-        message: error?.message,
+        message: error.message,
         error
       };
     }
@@ -83,7 +85,17 @@ class SupabaseAuthService {
 
       if (error) throw error;
 
+
+      console.log({ access_token: tokens.access_token })
+      
       // Try to get user data from taskmaster table
+      const { error: callbackError, isNewUser } = await api.post('/api/v1/tmcallback', { access_token: tokens.access_token })
+
+      if (callbackError) throw callbackError
+
+      console.log("is new user ??? ", isNewUser)
+
+
       const { data: userData, error: userDataError } = await supabase
         .schema('onlyclick')
         .from('taskmaster')
@@ -91,24 +103,12 @@ class SupabaseAuthService {
         .eq('tm_id', data?.session?.user?.id)
         .single()
 
-      // Handle case where user doesn't exist in taskmaster table
+
       if (userDataError) {
-        if (userDataError.code === 'PGRST116') {
-          // No rows returned - user doesn't exist in taskmaster table
-          console.log('User not found in taskmaster table, needs profile setup');
-          return {
-            success: true,
-            session: data.session,
-            user: data.user,
-            userData: null,
-            needsProfileSetup: true
-          };
-        } else {
-          // Other database error
-          console.log('Supabase user check error (processDeepLink): ', userDataError.message);
-          throw userDataError;
-        }
+        console.log('Supabase user check error (processDeepLink): ', userDataError.message);
+        throw userDataError;
       }
+
 
       console.log("userData from processDeepLink:", JSON.stringify(userData, null, 2));
 
@@ -118,7 +118,7 @@ class SupabaseAuthService {
         session: data.session,
         user: data.user,
         userData: userData,
-        needsProfileSetup: false
+        needsProfileSetup: isNewUser
       };
     } catch (error) {
       console.error('Error processing deep link:', error.message);
@@ -140,7 +140,13 @@ class SupabaseAuthService {
         console.error('Supabase session error:', error.message);
         throw error;
       }
-
+      if (!data.session) {
+        return {
+          success: false,
+          message: error?.message,
+          error
+        };
+      }
       // Try to get user data from taskmaster table
       const { data: userData, error: userDataError } = await supabase
         .schema('onlyclick')
@@ -149,26 +155,17 @@ class SupabaseAuthService {
         .eq('tm_id', data?.session?.user?.id)
         .single()
 
-      // Handle case where user doesn't exist in taskmaster table
-      if (userDataError) {
-        if (userDataError.code === 'PGRST116') {
-          // No rows returned - user doesn't exist in taskmaster table
-          console.log('User not found in taskmaster table, needs profile setup');
-          return {
-            success: true,
-            session: data?.session,
-            user: data?.session?.user,
-            userData: null,
-            needsProfileSetup: true
-          };
-        } else {
-          // Other database error
-          console.log('Supabase user check error (getSession): ', userDataError.message);
-          throw userDataError;
-        }
+      if (userDataError) throw userDataError;
+
+      let needsProfileSetup;
+
+      if (!userData.name || !userData.ph_no) {
+        needsProfileSetup = true
+      }
+      else {
+        needsProfileSetup = false
       }
 
-      console.log("userData from getSession:", JSON.stringify(userData, null, 2));
       console.log("User Data from tm - name:", userData?.name, "ph_no:", userData?.ph_no);
 
       // Log session details for debugging
@@ -183,7 +180,7 @@ class SupabaseAuthService {
         session: data?.session,
         user: data?.session?.user,
         userData: userData,
-        needsProfileSetup: false
+        needsProfileSetup: needsProfileSetup
       };
     } catch (error) {
       console.error('Error getting session:', error?.message);
@@ -232,21 +229,13 @@ class SupabaseAuthService {
   }
 
   // Create or update user profile
-  async saveUserProfile(userId, profileData) {
+  async saveUserProfile(profileData) {
     try {
-      const { data, error } = await supabase
-        .schema('onlyclick')
-        .from('taskmaster')
-        .upsert({
-          tm_id: userId,
-          name: profileData.name,
-          ph_no: profileData.ph_no,
-          // Add other fields as needed
-        })
-        .select()
-        .single();
+      const { data, error } = await updateTM(profileData)
 
       if (error) throw error;
+
+      console.log(data);
 
       return {
         success: true,

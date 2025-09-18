@@ -6,7 +6,7 @@ import { useAuth } from '../../../context/AuthProvider';
 import supabaseAuthService from '../../../services/supabaseAuthService';
 
 export default function ProfileSetup() {
-  const { user, setUser, authToken } = useAuth();
+  const { user, setUser, authToken, setNeedsProfileSetup, userData, setUserData} = useAuth();
   const { markProfileCompleted } = useAppStates();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,7 +17,7 @@ export default function ProfileSetup() {
   });
   const [errors, setErrors] = useState({});
 
-  // console.log(authToken);
+  console.log(authToken);
 
   const validateForm = () => {
     const newErrors = {};
@@ -49,23 +49,38 @@ export default function ProfileSetup() {
       }
       
       // Save profile data to Supabase  attention
-      const saveResponse = await supabaseAuthService.saveUserProfile(user.id, {
+      const saveResponse = await supabaseAuthService.saveUserProfile({
+        tm_id: user.id, // Add the user ID
         name: formData.name,
+        ph_no: formData.phone
         // Add other fields as needed
       });
       
       if (!saveResponse.success) {
         throw new Error(saveResponse.message || 'Failed to save profile');
       }
+
+      console.log("Profile saved successfully, updating auth state");
       
-      // Mark profile as completed
+      // Update the userData in auth context
+      const updatedUserData = {
+        ...userData,
+        name: formData.name,
+        ph_no: formData.phone
+      };
+      setUserData(updatedUserData);
+      
+      // Mark profile setup as complete
+      setNeedsProfileSetup(false);
+      
+      // Mark profile as completed in app states
       await markProfileCompleted();
       
-      // Navigate to main app
-      setTimeout(() => {
-        setIsLoading(false);
-        router.replace('/(app)/protected/(tabs)/Home');
-      }, 1000);
+      console.log("Navigating to home page");
+      setIsLoading(false);
+      
+      // Navigate to main app immediately
+      router.replace('/(app)/protected/(tabs)/Home');
     } catch (error) {
       setIsLoading(false);
       Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
