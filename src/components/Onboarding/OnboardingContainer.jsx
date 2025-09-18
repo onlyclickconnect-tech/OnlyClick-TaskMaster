@@ -1,6 +1,7 @@
+import { useAuth } from '@/src/context/AuthProvider';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, PanResponder, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 import OnboardingFooter from './OnboardingFooter';
 import OnboardingHeader from './OnboardingHeader';
 import OnboardingSlide from './OnboardingSlide';
@@ -26,6 +27,7 @@ const slides = [
 ];
 
 const OnboardingContainer = () => {
+  const { isLoading } = useAuth()
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -71,10 +73,10 @@ const OnboardingContainer = () => {
       })
     ]).start(() => {
       setCurrentSlide(prev => prev + 1);
-      
+
       fadeAnim.setValue(0);
       slideAnim.setValue(50);
-      
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -112,10 +114,10 @@ const OnboardingContainer = () => {
       })
     ]).start(() => {
       setCurrentSlide(prev => prev - 1);
-      
+
       fadeAnim.setValue(0);
       slideAnim.setValue(-50);
-      
+
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -134,7 +136,7 @@ const OnboardingContainer = () => {
   };
 
   // Create PanResponder for swipe gestures - recreate when currentSlide changes
-  const panResponder = useMemo(() => 
+  const panResponder = useMemo(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         // Disable swiping completely on the last slide or while transitioning
@@ -148,7 +150,7 @@ const OnboardingContainer = () => {
       },
       onPanResponderRelease: (evt, gestureState) => {
         const { dx } = gestureState;
-        
+
         // Swipe left (next slide)
         if (dx < -50) {
           handleNext();
@@ -158,13 +160,25 @@ const OnboardingContainer = () => {
           handlePrevious();
         }
       },
-  }), [currentSlide, handleNext, handlePrevious, isTransitioning]);
+    }), [currentSlide, handleNext, handlePrevious, isTransitioning]);
+
+  if (isLoading) return (
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#fff'
+    }}>
+      <ActivityIndicator size="large" color="#3898b3" />
+      <Text style={{ marginTop: 20, color: '#666' }}>Authenicating...</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       <OnboardingHeader />
-      
-      <Animated.View 
+
+      <Animated.View
         style={[
           styles.content,
           {
@@ -175,15 +189,15 @@ const OnboardingContainer = () => {
         {...panResponder.panHandlers}
       >
         {current ? (
-          <OnboardingSlide 
+          <OnboardingSlide
             title={current.title}
             description={current.description}
             image={current.image}
           />
         ) : null}
       </Animated.View>
-      
-      <OnboardingFooter 
+
+      <OnboardingFooter
         ref={footerRef}
         onNext={handleNext}
         onComplete={handleComplete}

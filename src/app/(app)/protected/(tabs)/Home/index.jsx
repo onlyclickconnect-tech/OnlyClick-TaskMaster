@@ -4,7 +4,9 @@ import Data from "../../../../../components/Home/Data";
 import Header from "../../../../../components/Home/Header";
 import Info from "../../../../../components/Home/Info";
 import { useAuth } from "../../../../../context/AuthProvider";
+import { useRouter } from "expo-router";
 export default function Home() {
+  const router = useRouter()
   const { user, isLoggedIn, userData } = useAuth();
   const [userStats, setUserStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
@@ -14,7 +16,9 @@ export default function Home() {
 
   useEffect(() => {
     const getdata = async () => {
-      console.log("user data from home",userData);
+      if(!userData || !(userData.name) || !(userData.ph_no)){
+        router.replace('/auth/profile-setup');
+      } 
     }
     getdata()
   }, [userData])

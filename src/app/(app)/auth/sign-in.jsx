@@ -33,7 +33,7 @@ export default function SignIn() {
     };
 
     const handleSignIn = async () => {
-        if (isLoading || isNavigating) return; // prevent double taps
+        if (isLoading) return; // prevent double taps
 
         if (!email.trim()) {
             setError('Please enter your email address');
@@ -79,7 +79,7 @@ export default function SignIn() {
                 error={error}
                 onEmailChange={handleEmailChange}
                 onSignIn={handleSignIn}
-                isLoading={isLoading || isNavigating}
+                isLoading={isLoading}
             />
             <SignInFooter />
         </View>

@@ -1,5 +1,5 @@
 import * as NavigationBar from "expo-navigation-bar/src/NavigationBar.android";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { useAppStates } from "../context/AppStates";
@@ -9,12 +9,13 @@ export default function Index() {
   const { isAppOpenedFirstTime, isProfileCompleted } = useAppStates();
   const { isLoggedIn, isLoading, userData, needsProfileSetup } = useAuth();
   const router = useRouter();
-  
+  const pathname = usePathname();
+
   const a = useCallback(async () => {
     await NavigationBar.setVisibilityAsync("hidden");
     // await NavigationBar.setBehaviorAsync("inset-swipe"); // This line causes the warning, commented out
   }, []);
-  
+
   useEffect(() => {
     a();
   }, []);
@@ -22,13 +23,20 @@ export default function Index() {
   useEffect(() => {
     // Wait for all loading states to complete
     if (isAppOpenedFirstTime !== null && !isLoading) {
-      console.log('App state:', { 
-        isAppOpenedFirstTime, 
-        isLoggedIn, 
-        hasUserData: !!userData, 
-        needsProfileSetup 
+      console.log('App state:', {
+        isAppOpenedFirstTime,
+        isLoggedIn,
+        hasUserData: !!userData,
+        needsProfileSetup,
+        currentPath: pathname || 'unknown'
       });
-      
+
+      // Don't redirect if user is already on profile-setup page
+      if (pathname === '/(app)/auth/profile-setup') {
+        console.log('User is on profile setup page, not redirecting');
+        return;
+      }
+
       if (isAppOpenedFirstTime) {
         // First time opening app - show onboarding
         console.log('Routing to intro (first time)');
@@ -61,9 +69,9 @@ export default function Index() {
 
   // Show loading while checking app state
   return (
-    <View style={{ 
-      flex: 1, 
-      justifyContent: 'center', 
+    <View style={{
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#fff'
     }}>

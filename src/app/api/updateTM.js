@@ -2,15 +2,17 @@
 
 import api from "./api";
 
-export const upsertUser = async (dataObj)=>{
+export const updateTM = async (dataObj)=>{
+    console.log(dataObj);
     try{
-        const {data, error} = api.post('/api/v1/upsertTM', dataObj);
+        const {data, error} = await api.post('/api/v1/updateTM', {dataObj});
         if(error){
             throw error;
         }
         return{data};
     }catch(error){
-        console.log("error inserting/updating user: ", error.message);
+        console.log("error inserting/updating user: ", error);
         return {error};
     }
 }
+
