@@ -7,7 +7,7 @@ import { useAuth } from "../../../../../context/AuthProvider";
 import { useRouter } from "expo-router";
 export default function Home() {
   const router = useRouter()
-  const { user, isLoggedIn, userData } = useAuth();
+  const { user, isLoggedIn, userData, authToken } = useAuth();
   const [userStats, setUserStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,6 +21,7 @@ export default function Home() {
       } 
     }
     getdata()
+    console.log(authToken);
   }, [userData])
 
 

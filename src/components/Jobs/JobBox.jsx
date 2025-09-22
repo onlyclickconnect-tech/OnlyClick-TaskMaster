@@ -102,7 +102,7 @@ export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPre
                   <Text style={styles.otpText}>OTP</Text>
                 </TouchableOpacity>
               </View>
-            ) : isCompleted ? (
+            ) : data.status === 'Completed' ? (
               <View style={styles.completedActions}>
                 <View style={styles.completedBadge}>
                   <Ionicons name="checkmark-circle" size={16} color="#27ae60" />
@@ -116,6 +116,13 @@ export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPre
                   <Text style={styles.viewReceiptText}>View Receipt</Text>
                 </TouchableOpacity>
               </View>
+            ) : data.status === 'Cancelled' ? (
+              <View style={styles.cancelledActions}>
+                <View style={styles.cancelledBadge}>
+                  <Ionicons name="close-circle" size={16} color="#e74c3c" />
+                  <Text style={styles.cancelledText}>Cancelled</Text>
+                </View>
+              </View>
             ) : (
               <TouchableOpacity style={styles.acceptButton} activeOpacity={0.8} onPress={() => onPress && onPress(data)}>
                 <Text style={styles.acceptText}>View Details</Text>
@@ -128,7 +135,7 @@ export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPre
     </>
   );
 
-  if (isCompleted) {
+  if (data.status === 'Completed') {
     return (
       <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => onPress && onPress(data)}>
         {CardContent}
@@ -346,6 +353,20 @@ const styles = StyleSheet.create({
     color: '#4ab9cf',
     fontWeight: '700',
     fontSize: 12,
+  },
+  cancelledActions: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  cancelledBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  cancelledText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#e74c3c',
   },
   acceptButton: {
     backgroundColor: '#4ab9cf',

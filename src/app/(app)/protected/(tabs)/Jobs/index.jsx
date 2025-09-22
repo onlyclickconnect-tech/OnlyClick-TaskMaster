@@ -1,8 +1,7 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Alert,
   Animated,
   Dimensions,
   Modal,
@@ -17,12 +16,15 @@ import {
 import JobBox from '../../../../../components/Jobs/JobBox';
 import ServiceDetail from '../../../../../components/Jobs/ServiceDetail';
 import AppHeader from '../../../../../components/common/AppHeader';
+import CustomAlert from '../../../../../components/common/CustomAlert';
+import api from '../../../../api/api';
 
 export default function Index() {
   const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
   const [activeTab, setActiveTab] = useState('Available');
   const [serviceModalVisible, setServiceModalVisible] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
+  const [serviceModalMode, setServiceModalMode] = useState('Available'); // Add separate state for modal mode
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -32,149 +34,205 @@ export default function Index() {
   const filters = ['All', 'High Pay', 'Nearby', 'Urgent', 'Regular Customer'];
   const sortOptions = ['Recent', 'Distance', 'Payment', 'Rating'];
 
-  const initial = {
-    Available: [
-      { 
-        _id: 'a1', 
-        customerName: 'Rajesh Kumar', 
-        serviceName: 'AC Repair & Service', 
-        address: '221B Baker Street, Bandra West', 
-        image: 'https://picsum.photos/300',
-        distance: '2.3 km',
-        estimatedTime: '45 mins',
-        payment: '₹850',
-        urgency: 'Medium',
-        customerRating: 4.8,
-        jobPostedTime: '5 mins ago',
-        description: 'AC not cooling properly, needs immediate attention',
-        serviceType: 'Emergency',
-        customerPhone: '+91 98765 43210'
-      },
-      { 
-        _id: 'a2', 
-        customerName: 'Priya Sharma', 
-        serviceName: 'Plumbing Service', 
-        address: '12 Park Avenue, Andheri East', 
-        image: 'https://picsum.photos/301',
-        distance: '1.8 km',
-        estimatedTime: '30 mins',
-        payment: '₹650',
-        urgency: 'High',
-        customerRating: 4.9,
-        jobPostedTime: '12 mins ago',
-        description: 'Kitchen sink blockage and water leakage',
-        serviceType: 'Regular',
-        customerPhone: '+91 87654 32109'
-      },
-      { 
-        _id: 'a3', 
-        customerName: 'Amit Verma', 
-        serviceName: 'Electrical Work', 
-        address: '45 Marine Drive, Mumbai Central', 
-        image: 'https://picsum.photos/303',
-        distance: '3.5 km',
-        estimatedTime: '60 mins',
-        payment: '₹1200',
-        urgency: 'Low',
-        customerRating: 4.6,
-        jobPostedTime: '25 mins ago',
-        description: 'Install new electrical fittings and fix wiring issues',
-        serviceType: 'Scheduled',
-        customerPhone: '+91 76543 21098'
-      },
-    ],
-    Pending: [
-      { 
-        _id: 'p1', 
-        customerName: 'Sneha Reddy', 
-        serviceName: 'Home Cleaning', 
-        address: '5 Downing Street, Powai', 
-        phone: '+91 98765 43210', 
-        image: 'https://picsum.photos/302',
-        distance: '2.1 km',
-        estimatedTime: '90 mins',
-        payment: '₹400',
-        urgency: 'Medium',
-        customerRating: 4.7,
-        jobPostedTime: '1 hour ago',
-        description: 'Deep cleaning of 2BHK apartment',
-        serviceType: 'Regular',
-        status: 'In Progress',
-        startTime: '10:30 AM',
-        otp: '4528'
-      },
-      { 
-        _id: 'p2', 
-        customerName: 'Rahul Gupta', 
-        serviceName: 'Appliance Repair', 
-        address: '78 Linking Road, Bandra', 
-        phone: '+91 87654 32109', 
-        image: 'https://picsum.photos/305',
-        distance: '1.5 km',
-        estimatedTime: '45 mins',
-        payment: '₹750',
-        urgency: 'High',
-        customerRating: 4.5,
-        jobPostedTime: '2 hours ago',
-        description: 'Washing machine not working properly',
-        serviceType: 'Emergency',
-        status: 'En Route',
-        startTime: '11:00 AM',
-        otp: '7329'
-      },
-    ],
-    Completed: [
-      { 
-        _id: 'c1', 
-        customerName: 'Kavya Patel', 
-        serviceName: 'Carpentry Work', 
-        address: '400 Elm Street, Juhu', 
-        image: 'https://picsum.photos/304', 
-        amountReceived: '₹1,200', 
-        paymentMethod: 'Digital',
-        distance: '4.2 km',
-        estimatedTime: '120 mins',
-        payment: '₹1200',
-        urgency: 'Low',
-        customerRating: 4.9,
-        jobPostedTime: '1 day ago',
-        description: 'Custom furniture installation and repair',
-        serviceType: 'Scheduled',
-        completedTime: '2:30 PM',
-        actualDuration: '110 mins',
-        customerFeedback: 'Excellent work! Very professional and timely.',
-        tipReceived: '₹100'
-      },
-      { 
-        _id: 'c2', 
-        customerName: 'Vikram Singh', 
-        serviceName: 'Painting Service', 
-        address: '33 Hill Road, Bandra', 
-        image: 'https://picsum.photos/306', 
-        amountReceived: '₹2,500', 
-        paymentMethod: 'Cash',
-        distance: '3.1 km',
-        estimatedTime: '180 mins',
-        payment: '₹2500',
-        urgency: 'Medium',
-        customerRating: 4.8,
-        jobPostedTime: '2 days ago',
-        description: 'Interior wall painting for bedroom',
-        serviceType: 'Regular',
-        completedTime: '4:45 PM',
-        actualDuration: '175 mins',
-        customerFeedback: 'Great job! Clean work and on time.',
-        tipReceived: '₹200'
-      },
-    ],
-  };
+  // const initial = {
+  //   Available: [
+  //     { 
+  //       _id: 'a1', 
+  //       customerName: 'Rajesh Kumar', 
+  //       serviceName: 'AC Repair & Service', 
+  //       address: '221B Baker Street, Bandra West', 
+  //       image: 'https://picsum.photos/300',
+  //       distance: '2.3 km',
+  //       estimatedTime: '45 mins',
+  //       payment: '₹850',
+  //       urgency: 'Medium',
+  //       customerRating: 4.8,
+  //       jobPostedTime: '5 mins ago',
+  //       description: 'AC not cooling properly, needs immediate attention',
+  //       serviceType: 'Emergency',
+  //       customerPhone: '+91 98765 43210'
+  //     },
+  //     { 
+  //       _id: 'a2', 
+  //       customerName: 'Priya Sharma', 
+  //       serviceName: 'Plumbing Service', 
+  //       address: '12 Park Avenue, Andheri East', 
+  //       image: 'https://picsum.photos/301',
+  //       distance: '1.8 km',
+  //       estimatedTime: '30 mins',
+  //       payment: '₹650',
+  //       urgency: 'High',
+  //       customerRating: 4.9,
+  //       jobPostedTime: '12 mins ago',
+  //       description: 'Kitchen sink blockage and water leakage',
+  //       serviceType: 'Regular',
+  //       customerPhone: '+91 87654 32109'
+  //     },
+  //     { 
+  //       _id: 'a3', 
+  //       customerName: 'Amit Verma', 
+  //       serviceName: 'Electrical Work', 
+  //       address: '45 Marine Drive, Mumbai Central', 
+  //       image: 'https://picsum.photos/303',
+  //       distance: '3.5 km',
+  //       estimatedTime: '60 mins',
+  //       payment: '₹1200',
+  //       urgency: 'Low',
+  //       customerRating: 4.6,
+  //       jobPostedTime: '25 mins ago',
+  //       description: 'Install new electrical fittings and fix wiring issues',
+  //       serviceType: 'Scheduled',
+  //       customerPhone: '+91 76543 21098'
+  //     },
+  //   ],
+  //   Pending: [
+  //     { 
+  //       _id: 'p1', 
+  //       customerName: 'Sneha Reddy', 
+  //       serviceName: 'Home Cleaning', 
+  //       address: '5 Downing Street, Powai', 
+  //       phone: '+91 98765 43210', 
+  //       image: 'https://picsum.photos/302',
+  //       distance: '2.1 km',
+  //       estimatedTime: '90 mins',
+  //       payment: '₹400',
+  //       urgency: 'Medium',
+  //       customerRating: 4.7,
+  //       jobPostedTime: '1 hour ago',
+  //       description: 'Deep cleaning of 2BHK apartment',
+  //       serviceType: 'Regular',
+  //       status: 'In Progress',
+  //       startTime: '10:30 AM',
+  //       otp: '4528'
+  //     },
+  //     { 
+  //       _id: 'p2', 
+  //       customerName: 'Rahul Gupta', 
+  //       serviceName: 'Appliance Repair', 
+  //       address: '78 Linking Road, Bandra', 
+  //       phone: '+91 87654 32109', 
+  //       image: 'https://picsum.photos/305',
+  //       distance: '1.5 km',
+  //       estimatedTime: '45 mins',
+  //       payment: '₹750',
+  //       urgency: 'High',
+  //       customerRating: 4.5,
+  //       jobPostedTime: '2 hours ago',
+  //       description: 'Washing machine not working properly',
+  //       serviceType: 'Emergency',
+  //       status: 'En Route',
+  //       startTime: '11:00 AM',
+  //       otp: '7329'
+  //     },
+  //   ],
+  //   Completed: [
+  //     { 
+  //       _id: 'c1', 
+  //       customerName: 'Kavya Patel', 
+  //       serviceName: 'Carpentry Work', 
+  //       address: '400 Elm Street, Juhu', 
+  //       image: 'https://picsum.photos/304', 
+  //       amountReceived: '₹1,200', 
+  //       paymentMethod: 'Digital',
+  //       distance: '4.2 km',
+  //       estimatedTime: '120 mins',
+  //       payment: '₹1200',
+  //       urgency: 'Low',
+  //       customerRating: 4.9,
+  //       jobPostedTime: '1 day ago',
+  //       description: 'Custom furniture installation and repair',
+  //       serviceType: 'Scheduled',
+  //       completedTime: '2:30 PM',
+  //       actualDuration: '110 mins',
+  //       customerFeedback: 'Excellent work! Very professional and timely.',
+  //       tipReceived: '₹100'
+  //     },
+  //     { 
+  //       _id: 'c2', 
+  //       customerName: 'Vikram Singh', 
+  //       serviceName: 'Painting Service', 
+  //       address: '33 Hill Road, Bandra', 
+  //       image: 'https://picsum.photos/306', 
+  //       amountReceived: '₹2,500', 
+  //       paymentMethod: 'Cash',
+  //       distance: '3.1 km',
+  //       estimatedTime: '180 mins',
+  //       payment: '₹2500',
+  //       urgency: 'Medium',
+  //       customerRating: 4.8,
+  //       jobPostedTime: '2 days ago',
+  //       description: 'Interior wall painting for bedroom',
+  //       serviceType: 'Regular',
+  //       completedTime: '4:45 PM',
+  //       actualDuration: '175 mins',
+  //       customerFeedback: 'Great job! Clean work and on time.',
+  //       tipReceived: '₹200'
+  //     },
+  //   ],
+  // };
 
-  const [available, setAvailable] = useState(initial.Available);
-  const [pending, setPending] = useState(initial.Pending);
-  const [completed, setCompleted] = useState(initial.Completed);
+  const [available, setAvailable] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [completed, setCompleted] = useState([]);
   const [tabSwitchAnimation] = useState(new Animated.Value(1));
 
-  // Functions
+  // Custom Alert Modal State
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info',
+    buttons: [],
+    showCancel: false,
+    jobDetails: null,
+    processing: false
+  });
+
+  // Custom Alert Functions
+  const showCustomAlert = (config) => {
+    setAlertConfig(config);
+    setCustomAlertVisible(true);
+  };
+
+  const hideCustomAlert = () => {
+    setCustomAlertVisible(false);
+  };
+
+
+  // Refresh all jobs function
+  const refreshAllJobs = async () => {
+    try {
+      const getPendigs = async () => {
+        const { data, errors } = await api.post('api/v1/getJobsAvailable');
+        if (errors) throw errors
+        setAvailable(data.data)
+      }
+      const getInProgress = async () => {
+        const { data, errors } = await api.post('api/v1/getJobsInProgress');
+        if (errors) throw errors
+        setPending(data.data)
+      }
+      const getCompleted = async () => {
+        const { data, errors } = await api.post('api/v1/getJobsCompleted');
+        if (errors) throw errors
+        setCompleted(data.data)
+      }
+
+      await Promise.all([getPendigs(), getInProgress(), getCompleted()]);
+    } catch (error) {
+      console.error('Error refreshing jobs:', error);
+    }
+  };
+
+  useEffect(() => {
+    refreshAllJobs();
+  }, [refreshing])
+
+
+
+
+
+
   const switchTabWithAnimation = (newTab) => {
     Animated.sequence([
       Animated.timing(tabSwitchAnimation, {
@@ -191,26 +249,45 @@ export default function Index() {
     setActiveTab(newTab);
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
+    try {
+      await refreshAllJobs();
+    } catch (error) {
+      console.error('Error during refresh:', error);
+    } finally {
       setRefreshing(false);
-    }, 1000);
+    }
   };
 
   const openService = (item, modeOverride) => {
+    console.log('=== OPEN SERVICE CALLED ===');
+    console.log('item:', item);
+    console.log('modeOverride:', modeOverride);
+    console.log('activeTab before override:', activeTab);
+    
     setSelectedService(item);
-    if (modeOverride) setActiveTab(modeOverride);
+    setServiceModalMode(modeOverride || activeTab); // Set modal mode separately
+    if (modeOverride && modeOverride !== activeTab) {
+      setActiveTab(modeOverride); // Only change tab if it's different
+    }
     setServiceModalVisible(true);
+    
+    console.log('Modal should open with mode:', modeOverride || activeTab);
   };
 
   const onEnterOtp = (item) => {
+    console.log('=== ON ENTER OTP CALLED ===');
+    console.log('activeTab:', activeTab);
+    console.log('item:', item);
+    
     // If user is in Available section and clicks OTP, move them to Pending
     if (activeTab === 'Available') {
+      console.log('User is in Available tab, switching to Pending');
       // Move job from Available to Pending
-      setAvailable(prev => prev.filter(i => i._id !== item._id));
-      setPending(prev => [{ ...item, status: 'Accepted', startTime: new Date().toLocaleTimeString() }, ...prev]);
-      
+      // setAvailable(prev => prev.filter(i => i._id !== item._id));
+      // setPending(prev => [{ ...item, status: 'Accepted', startTime: new Date().toLocaleTimeString() }, ...prev]);
+
       // Switch to Pending tab and open service detail
       setTimeout(() => {
         switchTabWithAnimation('Pending');
@@ -219,52 +296,173 @@ export default function Index() {
         }, 200);
       }, 300);
     } else {
+      console.log('User is in Pending tab, opening service modal');
       // Normal OTP flow for Pending items
       openService(item, 'Pending');
     }
   };
 
   const handleAccept = (svc) => {
-    setAvailable(prev => prev.filter(i => i._id !== svc._id));
-    setPending(prev => [{ ...svc, status: 'Accepted', startTime: new Date().toLocaleTimeString() }, ...prev]);
-    setServiceModalVisible(false);
+    console.log("=== HANDLE ACCEPT CALLED ===");
+    console.log("handle accept here");
+    console.log("svc", svc);
     
-    // Automatically switch to Pending tab to show the accepted job
-    setTimeout(() => {
-      switchTabWithAnimation('Pending');
-      Alert.alert(
-        '✅ Job Accepted!', 
-        `You have accepted the job for ${svc.customerName}.\n\nYou are now in the Pending section. Use the OTP button to start the job.`,
-        [{ text: 'Got it!', style: 'default' }]
-      );
-    }, 300);
+    showCustomAlert({
+      title: 'Accept Job',
+      message: 'Are you sure you want to accept this job?',
+      type: 'warning',
+      showCancel: true,
+      jobDetails: svc,
+      buttons: [
+        {
+          text: 'Accept Job',
+          onPress: async () => {
+            try {
+              // Show loading state
+              hideCustomAlert();
+              showCustomAlert({
+                title: 'Processing...',
+                message: 'Accepting job, please wait...',
+                type: 'info',
+                processing: true,
+                showCancel: false,
+                buttons: []
+              });
+
+              // Make API call to accept job
+              const { data, error } = await api.post('api/v1/acceptJob', svc);
+              
+              hideCustomAlert();
+
+              if (error) {
+                // Show error alert
+                showCustomAlert({
+                  title: 'Error',
+                  message: error.message || 'Failed to accept job. Please try again.',
+                  type: 'error',
+                  showCancel: false,
+                  buttons: [
+                    {
+                      text: 'OK',
+                      onPress: hideCustomAlert
+                    }
+                  ]
+                });
+                return;
+              }
+
+              if (data && data.success) {
+                // Success - refresh all jobs and switch to pending tab
+                await refreshAllJobs();
+                setServiceModalVisible(false);
+                
+                // Automatically switch to Pending tab to show the accepted job
+                setTimeout(() => {
+                  switchTabWithAnimation('Pending');
+                  showCustomAlert({
+                    title: 'Job Accepted!',
+                    message: `You have successfully accepted the job for ${svc.customerName}.\n\nYou are now in the Pending section. Use the OTP button to start the job.`,
+                    type: 'success',
+                    showCancel: false,
+                    jobDetails: svc,
+                    buttons: [
+                      {
+                        text: 'Got it!',
+                        onPress: hideCustomAlert
+                      }
+                    ]
+                  });
+                }, 300);
+              } else {
+                // API returned success: false
+                showCustomAlert({
+                  title: 'Failed to Accept',
+                  message: data?.message || 'Unable to accept job at this time. Please try again.',
+                  type: 'error',
+                  showCancel: false,
+                  buttons: [
+                    {
+                      text: 'OK',
+                      onPress: hideCustomAlert
+                    }
+                  ]
+                });
+              }
+            } catch (err) {
+              hideCustomAlert();
+              console.error('Error accepting job:', err);
+              showCustomAlert({
+                title: 'Network Error',
+                message: 'Could not connect to server. Please check your internet connection and try again.',
+                type: 'error',
+                showCancel: false,
+                buttons: [
+                  {
+                    text: 'OK',
+                    onPress: hideCustomAlert
+                  }
+                ]
+              });
+            }
+          }
+        }
+      ]
+    });
   };
 
-  const handleComplete = (svc) => {
-    setPending(prev => prev.filter(i => i._id !== svc._id));
-    setCompleted(prev => [{ 
-      ...svc, 
-      completedTime: new Date().toLocaleTimeString(),
-      actualDuration: svc.estimatedTime,
-      customerFeedback: 'Service completed successfully'
-    }, ...prev]);
-    setServiceModalVisible(false);
+  const handleComplete = async (svc) => {
+    console.log('=== HANDLE COMPLETE CALLED ===');
+    console.log('Completed service:', svc);
     
-    // Automatically switch to Completed tab to show the completed job
-    setTimeout(() => {
-      switchTabWithAnimation('Completed');
-      Alert.alert(
-        '🎉 Job Completed!', 
-        `Great work! Job completed for ${svc.customerName}.\n\nPayment will be processed and added to your earnings.`,
-        [{ text: 'Awesome!', style: 'default' }]
-      );
-    }, 300);
+    try {
+      // Refresh all jobs to get updated status from server
+      await refreshAllJobs();
+      setServiceModalVisible(false);
+
+      // Automatically switch to Completed tab to show the completed job
+      setTimeout(() => {
+        switchTabWithAnimation('Completed');
+        showCustomAlert({
+          title: 'Job Completed!',
+          message: `Great work! Job completed for ${svc.customerName}.\n\nPayment will be processed and added to your earnings.`,
+          type: 'success',
+          showCancel: false,
+          jobDetails: svc,
+          buttons: [
+            {
+              text: 'Awesome!',
+              onPress: hideCustomAlert
+            }
+          ]
+        });
+      }, 300);
+    } catch (error) {
+      console.error('Error refreshing jobs after completion:', error);
+      // Still show success message even if refresh fails
+      setServiceModalVisible(false);
+      setTimeout(() => {
+        switchTabWithAnimation('Completed');
+        showCustomAlert({
+          title: 'Job Completed!',
+          message: `Great work! Job completed for ${svc.customerName}.\n\nPayment will be processed and added to your earnings.`,
+          type: 'success',
+          showCancel: false,
+          jobDetails: svc,
+          buttons: [
+            {
+              text: 'Awesome!',
+              onPress: hideCustomAlert
+            }
+          ]
+        });
+      }, 300);
+    }
   };
 
   const handleBack = () => router.back();
 
   const getTabCount = (tab) => {
-    switch(tab) {
+    switch (tab) {
       case 'Available': return available.length;
       case 'Pending': return pending.length;
       case 'Completed': return completed.length;
@@ -274,10 +472,10 @@ export default function Index() {
 
   const filterJobs = (jobs) => {
     let filtered = jobs;
-    
+
     // Apply search filter
     if (search) {
-      filtered = filtered.filter(job => 
+      filtered = filtered.filter(job =>
         job.customerName.toLowerCase().includes(search.toLowerCase()) ||
         job.serviceName.toLowerCase().includes(search.toLowerCase()) ||
         job.address.toLowerCase().includes(search.toLowerCase())
@@ -287,7 +485,7 @@ export default function Index() {
     // Apply category filter
     if (activeFilter !== 'All') {
       filtered = filtered.filter(job => {
-        switch(activeFilter) {
+        switch (activeFilter) {
           case 'High Pay': return parseInt(job.payment.replace('₹', '').replace(',', '')) >= 1000;
           case 'Nearby': return parseFloat(job.distance) <= 2.0;
           case 'Urgent': return job.urgency === 'High';
@@ -299,7 +497,7 @@ export default function Index() {
 
     // Apply sorting
     filtered.sort((a, b) => {
-      switch(sortBy) {
+      switch (sortBy) {
         case 'Distance': return parseFloat(a.distance) - parseFloat(b.distance);
         case 'Payment': return parseInt(b.payment.replace('₹', '').replace(',', '')) - parseInt(a.payment.replace('₹', '').replace(',', ''));
         case 'Rating': return b.customerRating - a.customerRating;
@@ -311,7 +509,7 @@ export default function Index() {
   };
 
   const getCurrentJobs = () => {
-    switch(activeTab) {
+    switch (activeTab) {
       case 'Available': return filterJobs(available);
       case 'Pending': return filterJobs(pending);
       case 'Completed': return filterJobs(completed);
@@ -319,7 +517,7 @@ export default function Index() {
     }
   };
 
-  
+
 
   return (
     <View style={styles.container}>
@@ -332,8 +530,8 @@ export default function Index() {
         notificationCount={3}
         onNotification={() => router.push('/(app)/protected/Notifications')}
       />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -343,7 +541,7 @@ export default function Index() {
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statsRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.statCard, activeTab === 'Available' && styles.statCardActive]}
               onPress={() => switchTabWithAnimation('Available')}
             >
@@ -353,8 +551,8 @@ export default function Index() {
               <Text style={[styles.statNumber, activeTab === 'Available' && styles.statNumberActive]}>{available.length}</Text>
               <Text style={[styles.statLabel, activeTab === 'Available' && styles.statLabelActive]}>Available</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.statCard, activeTab === 'Pending' && styles.statCardActive]}
               onPress={() => switchTabWithAnimation('Pending')}
             >
@@ -364,8 +562,8 @@ export default function Index() {
               <Text style={[styles.statNumber, activeTab === 'Pending' && styles.statNumberActive]}>{pending.length}</Text>
               <Text style={[styles.statLabel, activeTab === 'Pending' && styles.statLabelActive]}>In Progress</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.statCard, activeTab === 'Completed' && styles.statCardActive]}
               onPress={() => switchTabWithAnimation('Completed')}
             >
@@ -400,31 +598,31 @@ export default function Index() {
           {getCurrentJobs().length > 0 ? (
             getCurrentJobs().map((item, index, arr) => (
               <View key={item._id} style={[styles.jobCardWrapper, index === (arr.length - 1) ? styles.lastJobCard : null]}>
-                <JobBox 
-                  data={item} 
-                  isPending={activeTab === 'Pending'} 
+                <JobBox
+                  data={item}
+                  isPending={activeTab === 'Pending'}
                   isCompleted={activeTab === 'Completed'}
-                  onEnterOtp={onEnterOtp} 
-                  onPress={() => openService(item, activeTab)} 
+                  onEnterOtp={onEnterOtp}
+                  onPress={() => openService(item, activeTab)}
                 />
               </View>
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons 
+              <Ionicons
                 name={
                   activeTab === 'Available' ? 'briefcase-outline' :
-                  activeTab === 'Pending' ? 'time-outline' : 
-                  'checkmark-circle-outline'
-                } 
-                size={60} 
-                color="#bdc3c7" 
+                    activeTab === 'Pending' ? 'time-outline' :
+                      'checkmark-circle-outline'
+                }
+                size={60}
+                color="#bdc3c7"
               />
               <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} jobs</Text>
               <Text style={styles.emptySubtitle}>
                 {activeTab === 'Available' ? 'New jobs will appear here when customers book services' :
-                 activeTab === 'Pending' ? 'Jobs you accept will appear here. Click OTP to start working!' :
-                 'Completed jobs will be listed here with payment details'}
+                  activeTab === 'Pending' ? 'Jobs you accept will appear here. Click OTP to start working!' :
+                    'Completed jobs will be listed here with payment details'}
               </Text>
             </View>
           )}
@@ -479,8 +677,8 @@ export default function Index() {
               ))}
             </View>
 
-            <TouchableOpacity 
-              style={styles.applyButton} 
+            <TouchableOpacity
+              style={styles.applyButton}
               onPress={() => setFilterModalVisible(false)}
             >
               <Text style={styles.applyButtonText}>Apply Filters</Text>
@@ -493,9 +691,22 @@ export default function Index() {
         visible={serviceModalVisible}
         onClose={() => setServiceModalVisible(false)}
         service={selectedService}
-        mode={activeTab}
+        mode={serviceModalMode}
         onAccept={handleAccept}
         onComplete={handleComplete}
+      />
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={customAlertVisible}
+        onClose={hideCustomAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        buttons={alertConfig.buttons}
+        showCancel={alertConfig.showCancel}
+        jobDetails={alertConfig.jobDetails}
+        processing={alertConfig.processing}
       />
     </View>
   );
@@ -567,7 +778,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statsContainer: {
-    padding:16,
+    padding: 16,
   },
   statsRow: {
     flexDirection: 'row',

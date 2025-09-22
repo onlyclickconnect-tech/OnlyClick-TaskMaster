@@ -3,7 +3,10 @@ import { TouchableOpacity,  View, StyleSheet } from 'react-native';
 import Text from "../ui/Text";
 const SignInFooter = () => {
     return (
+
+
         <Text></Text>
+
 
     );
 };

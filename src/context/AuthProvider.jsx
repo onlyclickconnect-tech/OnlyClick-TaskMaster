@@ -34,7 +34,7 @@ export default function AuthProvider({ children }) {
         console.log(sessionResponse.response);
 
         setUser(sessionResponse.user);
-        setUserData(sessionResponse.userData)
+        setUserData(sessionResponse.userData);
         setIsLoggedIn(true);
         setAuthToken(sessionResponse.session.access_token);
         setNeedsProfileSetup(sessionResponse.needsProfileSetup || false);
