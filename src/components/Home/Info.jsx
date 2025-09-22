@@ -52,7 +52,6 @@ export default function Info({ userStats, isLoading }) {
   const primaryService = user?.services?.[0] || "General Services";
   const userIdDisplay = user?.taskmasterId || user?._id?.slice(-6) || "TM001";
   const rating = userStats?.averageRating || user?.rating || 0;
-  const reviewCount = userStats?.totalReviews || user?.totalReviews || 0;
 
   if (isLoading) {
     return (
@@ -97,10 +96,7 @@ export default function Info({ userStats, isLoading }) {
           </View>
         </View>
       </View>
-      <Text style={{ top: 15 }}>
-        {rating.toFixed(1)} ⭐️ {"("}
-        {reviewCount}+ reviews{")"}
-      </Text>
+      
     </View>
   );
 }

@@ -49,7 +49,7 @@ export default {
     extra: {
       router: {},
       eas: {
-        projectId: "2d01e0f5-30f6-4bcf-b42b-158aa7185c4c",
+        "projectId": "5e84b62b-c0c2-4bbc-9ab2-6b9b124b8ae1"
       },
       // Environment variables for the app
       expoPublicSupabaseUrl:

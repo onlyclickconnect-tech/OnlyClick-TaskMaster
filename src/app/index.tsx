@@ -21,8 +21,10 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    // Wait for all loading states to complete
+    // Wait for all loading states to complete - add small delay to prevent flash
     if (isAppOpenedFirstTime !== null && !isLoading) {
+      // Add a small delay to ensure auth state is fully resolved
+      const timeoutId = setTimeout(() => {
       console.log('App state:', {
         isAppOpenedFirstTime,
         isLoggedIn,
@@ -63,6 +65,9 @@ export default function Index() {
         console.log('Routing to home (authenticated and profile complete)');
         router.replace("/(app)/protected/(tabs)/Home");
       }
+      }, 100); // 100ms delay to prevent flash
+
+      return () => clearTimeout(timeoutId);
     }
   }, [isAppOpenedFirstTime, isLoggedIn, isLoading, userData, needsProfileSetup, router]);
 

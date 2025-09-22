@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -26,6 +27,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function ServicesPage() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { selectedCategory: categoryParam } = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -33,6 +35,13 @@ export default function ServicesPage() {
   const [requestModalVisible, setRequestModalVisible] = useState(false);
   const [requestPrice, setRequestPrice] = useState('');
   const [requestService, setRequestService] = useState(null);
+
+  // Hide the default header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   // Transform service categories for the UI with proper counts
   const categories = [
@@ -302,7 +311,7 @@ export default function ServicesPage() {
       <FlatList
         data={filteredServices}
         renderItem={({ item }) => <ServiceCard item={item} />}
-        keyExtractor={item => `service-${item.serviceId}`}
+        keyExtractor={(item, index) => `service-${item.serviceId}-${item.title}-${index}` }
         ListHeaderComponent={
           <View>
             {/* Search Bar */}
@@ -334,7 +343,7 @@ export default function ServicesPage() {
               <FlatList
                 data={filteredCategories}
                 renderItem={renderCategoryCard}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item, index) => `category-${item.id}-${item.name}-${index}`}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoriesContainer}
@@ -753,8 +762,3 @@ const styles = StyleSheet.create({
   modalSubmit: { backgroundColor: '#28A745', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
   modalSubmitText: { color: '#fff', fontWeight: '700' },
 });
-
-// Hide native stack header for this screen so the app layout or in-screen header is used
-export const options = {
-  headerShown: false,
-};

@@ -24,7 +24,7 @@ export default function AppHeader({
   const topInset = hideStatusBar ? 8 : (Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 44);
 
   return (
-    <View style={[styles.header, { backgroundColor: headerBg, paddingTop: topInset + 8 }]}> 
+    <View style={[styles.header, { backgroundColor: headerBg, paddingTop: topInset + 4 }]}>
       <StatusBar hidden={hideStatusBar} style={variant === 'transparent' ? 'dark' : 'light'} />
 
       <View style={styles.headerContent}>
