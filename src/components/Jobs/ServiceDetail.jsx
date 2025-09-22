@@ -1,24 +1,52 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Image,
-    Linking,
-    Modal,
-    PanResponder,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  Linking,
+  Modal,
+  PanResponder,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import api from '../../app/api/api';
+import CustomAlert from '../common/CustomAlert';
 
 export default function ServiceDetail({ visible, onClose, service, mode = 'Pending', onAccept, onComplete }) {
   const [otp, setOtp] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
+
+  // Custom Alert State
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info',
+    buttons: [],
+    showCancel: true,
+    processing: false
+  });
+
+  console.log('=== ServiceDetail rendered ===');
+  console.log('visible:', visible);
+  console.log('mode:', mode);
+  console.log('service:', service);
+  console.log('onComplete exists:', !!onComplete);
+
+  // Helper function to show custom alert
+  const showCustomAlert = (config) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  };
+
+  const hideCustomAlert = () => {
+    setAlertVisible(false);
+  };
 
   const panResponder = useRef(PanResponder.create({
     onStartShouldSetPanResponder: (evt, gestureState) => true,
@@ -66,38 +94,249 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
 
   const callCustomer = () => {
     const phone = service.phone || service.customerPhone || service.phoneNumber || '';
-    if (!phone) return Alert.alert('No phone', 'Customer phone number is not available');
+    if (!phone) {
+      return showCustomAlert({
+        title: 'No Phone Number',
+        message: 'Customer phone number is not available. Please contact support or check the job details.',
+        type: 'warning',
+        buttons: [
+          {
+            text: 'OK',
+            onPress: hideCustomAlert
+          }
+        ],
+        showCancel: false
+      });
+    }
     Linking.openURL(`tel:${phone}`);
   };
 
   const acceptJob = () => {
-  if (onAccept) onAccept(service);
-  else Alert.alert('Accepted', 'Job accepted.');
-  close();
+    console.log("=== ServiceDetail acceptJob called ===");
+    console.log("onAccept exists?", !!onAccept);
+    console.log("service:", service);
+    
+    if (onAccept) {
+      console.log("Calling onAccept with service...");
+      onAccept(service);
+      // Don't call close() here - let the parent component handle modal closing
+    } else {
+      showCustomAlert({
+        title: 'Job Accepted',
+        message: 'Great! You have accepted this job. You can now start working on it.',
+        type: 'success',
+        buttons: [
+          {
+            text: 'Continue',
+            onPress: () => {
+              hideCustomAlert();
+              close();
+            }
+          }
+        ],
+        showCancel: false
+      });
+    }
   };
 
-  const verifyOtp = () => {
-    if (!otp) return Alert.alert('OTP required', 'Please enter the OTP');
-    const valid = otp === '1234' || otp.length === 4; // demo rule
-    if (!valid) return Alert.alert('Invalid OTP', 'The entered OTP is incorrect');
-  if (onComplete) onComplete(service);
-  Alert.alert('Success', 'OTP verified. Job has started.');
-  setOtp('');
-  close();
-  };
-
-  const submitOtp = () => {
-    if (!otp) return Alert.alert('OTP required', 'Please enter the OTP');
-    const valid = otp === '1234' || otp.length === 4; // demo rule
-    if (!valid) return Alert.alert('Invalid OTP', 'The entered OTP is incorrect');
+  const submitOtp = async () => {
+    if (!otp) {
+      return showCustomAlert({
+        title: 'OTP Required',
+        message: 'Please enter the OTP to complete the job.',
+        type: 'warning',
+        buttons: [
+          {
+            text: 'OK',
+            onPress: hideCustomAlert
+          }
+        ],
+        showCancel: false
+      });
+    }
+    
+    console.log('=== SUBMIT OTP CALLED ===');
+    console.log('OTP entered:', otp);
+    console.log('Service data before API call:', service);
+    
+    // Show processing alert
+    showCustomAlert({
+      title: 'Verifying OTP',
+      message: 'Please wait while we verify your OTP...',
+      type: 'info',
+      processing: true,
+      showCancel: false,
+      buttons: []
+    });
+    
     setSubmitting(true);
-    setTimeout(() => {
-  setSubmitting(false);
-  Alert.alert('Success', 'Job is successfully accepted');
-  if (onComplete) onComplete(service);
-  setOtp('');
-  close();
-    }, 700);
+    
+    try {
+      // Prepare request payload matching backend expectations
+      const requestPayload = {
+        _id: service._id || service.id,  // Booking ID
+        otp: otp  // OTP entered by user
+      };
+      
+      console.log('=== MAKING API CALL ===');
+      console.log('API URL: api/v1/verifyJobComplete');
+      console.log('Request payload:', requestPayload);
+      
+      // Make API call to verify job completion
+      const response = await api.post('api/v1/verifyJobComplete', requestPayload);
+      
+      console.log('=== API RESPONSE SUCCESS ===');
+      console.log('Response data:', response.data);
+      
+      setSubmitting(false);
+      hideCustomAlert();
+      
+      // Backend returns { success: true } on successful OTP verification
+      if (response.data && response.data.success) {
+        setOtp(''); // Clear OTP input
+        
+        showCustomAlert({
+          title: 'OTP Verified!',
+          message: 'OTP verified successfully. The job has been marked as completed and payment will be processed.',
+          type: 'success',
+          buttons: [
+            {
+              text: 'Great!',
+              onPress: () => {
+                console.log('Job completed successfully, calling onComplete and closing modal');
+                hideCustomAlert();
+                if (onComplete) onComplete(service);
+                close();
+              }
+            }
+          ],
+          showCancel: false,
+          jobDetails: service
+        });
+      } else {
+        // Unexpected response format
+        showCustomAlert({
+          title: 'Verification Failed',
+          message: 'Unexpected response from server. Please try again.',
+          type: 'error',
+          buttons: [
+            {
+              text: 'Try Again',
+              onPress: hideCustomAlert
+            }
+          ],
+          showCancel: false
+        });
+      }
+      
+    } catch (err) {
+      console.log('=== API ERROR CAUGHT ===');
+      console.error('API Error:', err);
+      setSubmitting(false);
+      hideCustomAlert();
+      
+      // Handle specific backend error responses
+      if (err.response) {
+        const status = err.response.status;
+        const errorData = err.response.data;
+        
+        console.log('Error status:', status);
+        console.log('Error data:', errorData);
+        
+        switch (status) {
+          case 400:
+            // Invalid OTP or job completion failure
+            showCustomAlert({
+              title: 'Invalid OTP',
+              message: 'The OTP you entered is incorrect. Please check and try again.',
+              type: 'error',
+              buttons: [
+                {
+                  text: 'Try Again',
+                  onPress: hideCustomAlert
+                }
+              ],
+              showCancel: false
+            });
+            break;
+            
+          case 404:
+            // Booking not found
+            showCustomAlert({
+              title: 'Booking Not Found',
+              message: 'This booking could not be found. Please contact support.',
+              type: 'error',
+              buttons: [
+                {
+                  text: 'Contact Support',
+                  onPress: hideCustomAlert
+                }
+              ],
+              showCancel: false
+            });
+            break;
+            
+          case 500:
+            // Server error
+            showCustomAlert({
+              title: 'Server Error',
+              message: 'A server error occurred. Please try again later.',
+              type: 'error',
+              buttons: [
+                {
+                  text: 'Try Again',
+                  onPress: hideCustomAlert
+                }
+              ],
+              showCancel: false
+            });
+            break;
+            
+          default:
+            // Other HTTP errors
+            showCustomAlert({
+              title: 'Verification Failed',
+              message: errorData?.message || 'Failed to verify OTP. Please try again.',
+              type: 'error',
+              buttons: [
+                {
+                  text: 'Try Again',
+                  onPress: hideCustomAlert
+                }
+              ],
+              showCancel: false
+            });
+        }
+      } else if (err.request) {
+        // Network error - request made but no response
+        showCustomAlert({
+          title: 'Network Error',
+          message: 'Could not connect to server. Please check your internet connection and try again.',
+          type: 'error',
+          buttons: [
+            {
+              text: 'Try Again',
+              onPress: hideCustomAlert
+            }
+          ],
+          showCancel: false
+        });
+      } else {
+        // Other error
+        showCustomAlert({
+          title: 'Error',
+          message: 'An unexpected error occurred. Please try again.',
+          type: 'error',
+          buttons: [
+            {
+              text: 'Try Again',
+              onPress: hideCustomAlert
+            }
+          ],
+          showCancel: false
+        });
+      }
+    }
   };
 
   return (
@@ -176,17 +415,31 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
 
           {mode === 'Pending' && (
             <View style={styles.otpSectionBig}>
-              <Text style={styles.otpTitle}>Enter OTP to accept job</Text>
+              <Text style={styles.otpTitle}>Enter OTP to complete job</Text>
               <TextInput
                 value={otp}
                 onChangeText={setOtp}
                 placeholder="Enter 4-digit OTP"
                 keyboardType="number-pad"
-                style={styles.otpInputLarge}
+                style={[
+                  styles.otpInputLarge,
+                  (submitting || alertConfig.processing) && styles.disabledInput
+                ]}
                 maxLength={6}
+                editable={!submitting && !alertConfig.processing}
               />
-              <TouchableOpacity style={styles.submitBtn} onPress={submitOtp} disabled={submitting}>
-                <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
+              <TouchableOpacity 
+                style={[
+                  styles.submitBtn,
+                  (submitting || alertConfig.processing) && styles.disabledButton
+                ]} 
+                onPress={submitOtp} 
+                disabled={submitting || alertConfig.processing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.submitText}>
+                  {(submitting || alertConfig.processing) ? 'Verifying...' : 'Submit OTP'}
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -204,7 +457,21 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
                   </TouchableOpacity>
               ) : (
                 mode !== 'Pending' ? (
-                  <TouchableOpacity style={styles.primaryBtn} onPress={() => Alert.alert('Info', 'Mark as started')}>
+                  <TouchableOpacity style={styles.primaryBtn} onPress={() => 
+                    showCustomAlert({
+                      title: 'Job Status',
+                      message: 'This job is ready to be started. Please coordinate with the customer and begin the work.',
+                      type: 'info',
+                      buttons: [
+                        {
+                          text: 'Got it!',
+                          onPress: hideCustomAlert
+                        }
+                      ],
+                      showCancel: false,
+                      jobDetails: service
+                    })
+                  }>
                     <Text style={styles.primaryText}>Mark as Started</Text>
                   </TouchableOpacity>
                 ) : null
@@ -213,6 +480,19 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
           </View>
         </Animated.View>
       </View>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertVisible}
+        onClose={hideCustomAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        buttons={alertConfig.buttons}
+        showCancel={alertConfig.showCancel}
+        jobDetails={alertConfig.jobDetails}
+        processing={alertConfig.processing}
+      />
     </Modal>
   );
 }
@@ -248,7 +528,9 @@ const styles = StyleSheet.create({
   otpSectionBig: { marginTop: 12, padding: 12, backgroundColor: '#f7fbfc', borderRadius: 12 },
   otpTitle: { fontWeight: '800', fontSize: 16, marginBottom: 8 },
   otpInputLarge: { backgroundColor: '#fff', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e6e6e6', fontSize: 18, textAlign: 'center' },
+  disabledInput: { backgroundColor: '#f5f5f5', color: '#999', borderColor: '#ddd' },
   submitBtn: { marginTop: 12, backgroundColor: '#2aa6bb', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  disabledButton: { backgroundColor: '#bdc3c7', opacity: 0.7 },
   submitText: { color: '#fff', fontWeight: '800' },
   completedSection: { marginTop: 12, padding: 12, backgroundColor: '#eef8f7', borderRadius: 10 },
   completedTitle: { fontWeight: '800', marginBottom: 6 },

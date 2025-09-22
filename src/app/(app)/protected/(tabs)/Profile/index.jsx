@@ -272,7 +272,7 @@ export default function ProfilePage() {
             {(() => {
               const displayName = editMode ? (editableName || displayUser?.name || userData?.name || 'TaskMaster User') : (displayUser?.name || userData?.name || 'TaskMaster User');
               const displayCategory = editMode ? (editableCategory || displayUser?.category || user?.category || 'Service Provider') : (displayUser?.category || user?.category || 'Service Provider');
-              const displayPhone = editMode ? (editablePhone || displayUser?.phoneNumber || user?.phoneNumber || '+91 XXXXXXXXXX') : (displayUser?.phoneNumber || user?.phoneNumber || '+91 XXXXXXXXXX');
+              const displayPhone = editMode ? (editablePhone || displayUser?.phoneNumber || userData?.ph_no || '+91 XXXXXXXXXX') : (displayUser?.phoneNumber || userData?.ph_no || '+91 XXXXXXXXXX');
               const displayImage = editMode ? (profileImageUri || displayUser?.profileImage || user?.profileImage) : (displayUser?.profileImage || user?.profileImage || profileImageUri);
 
               return (

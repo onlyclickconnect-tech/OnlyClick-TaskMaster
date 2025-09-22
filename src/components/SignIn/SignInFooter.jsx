@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 
 const SignInFooter = () => {
     return (
-        <Text style={styles.footerText}>Ann app for the Service Providers</Text>
+        <Text style={styles.footerText}>An app for the Service Providers</Text>
     );
 };
 
