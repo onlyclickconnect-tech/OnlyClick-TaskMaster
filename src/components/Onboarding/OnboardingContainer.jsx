@@ -1,12 +1,19 @@
-import { useAuth } from '@/src/context/AuthProvider';
-import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
-import OnboardingFooter from './OnboardingFooter';
-import OnboardingHeader from './OnboardingHeader';
-import OnboardingSlide from './OnboardingSlide';
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  PanResponder,
+  StyleSheet,
+  View,
+} from "react-native";
+import supabase from "../../data/supabaseClient.js";
+import LoadingScreen from "../common/LoadingScreen.jsx";
+import OnboardingFooter from "./OnboardingFooter";
+import OnboardingHeader from "./OnboardingHeader";
+import OnboardingSlide from "./OnboardingSlide";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const slides = [
   {
@@ -23,38 +30,152 @@ const slides = [
     title: "We’ve got your back. Always.",
     description: "From verified bookings to real-time support, you’re never alone on the job.\nTask Master ensures trust, safety, and steady opportunities —\nso you can work with peace of mind.",
     image: require('../../../assets/images/onboard3.png')
-  }
+  },
 ];
 
-const OnboardingContainer = () => {
-  const { isLoading } = useAuth()
+const OnboardingContainer = ({ onComplete }) => {
+  const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const footerRef = useRef(null);
-  const router = useRouter();
 
-  // Defensive: make sure currentSlide points to a valid slide
-  const current = slides[currentSlide] ?? null;
-  if (!current) {
-    // This helps debug why an out-of-range index occurred at runtime
-    console.warn(`OnboardingContainer: slide index ${currentSlide} is out of range (0..${slides.length - 1})`);
-  }
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkNewUser = async () => {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        return;
+      }
+      if (!user) {
+        return;
+      }
+
+
+      // 2️⃣ Query the profile in onlyclick.users
+      const { data, error } = await supabase
+        .schema("onlyclick")
+        .from("users")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        return;
+      }
+
+      if (data.full_name) {
+        router.replace("/(app)/protected/(tabs)/Home");
+      } else {
+        return;
+      }
+    };
+
+    checkNewUser();
+  }, []);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      // await supabase.auth.signOut()   // to signout everytime when login uncomment this
+      try {
+        // Get stored session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          //No session stored
+          return;
+        }
+
+        // Verify with Supabase using access token
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+
+        if (error || !user) {
+          // // if Session invalid/expired
+          await supabase.auth.signOut();
+          return;
+        } else {
+
+          const { data, error } = await supabase
+            .schema("onlyclick")
+            .from("users")
+            .select("full_name")
+            .eq("user_id", user.id)
+            .single();
+
+          if (error) {
+            return;
+          }
+
+          if (data.full_name) {
+            router.replace("/(app)/protected/(tabs)/Home");
+          } else {
+            router.replace("/(app)/auth/profile-setup")
+          }
+
+        }
+      } catch (err) {
+        return;
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   // Unified completion function
   const handleComplete = () => {
-    // Prevent double navigation if user taps fast
-    if (isTransitioning || isNavigating) return;
-    setIsNavigating(true);
-    router.push('/(app)/auth/terms-privacy');
+    // Prevent multiple completion calls
+    if (isCompleting) {
+      return;
+    }
+
+    setIsCompleting(true);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -50,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Add a small delay before navigation to ensure smooth transition
+      setTimeout(() => {
+        router.push("/(app)/auth/sign-in"); // Navigate directly to sign-in page
+      }, 100);
+    });
   };
 
   const handleNext = () => {
-    if (isTransitioning) return; // prevent double clicks/swipes
     if (currentSlide === slides.length - 1) {
       handleComplete();
+      return;
+    }
+
+    // Prevent multiple transitions
+    if (isTransitioning) {
+      return;
+    }
+
+    // Additional safety check
+    if (currentSlide < 0 || currentSlide >= slides.length) {
       return;
     }
 
@@ -70,9 +191,9 @@ const OnboardingContainer = () => {
         toValue: -50,
         duration: 300,
         useNativeDriver: true,
-      })
+      }),
     ]).start(() => {
-      setCurrentSlide(prev => prev + 1);
+      setCurrentSlide((prev) => prev + 1);
 
       fadeAnim.setValue(0);
       slideAnim.setValue(50);
@@ -87,17 +208,28 @@ const OnboardingContainer = () => {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        })
+        }),
       ]).start(() => {
-        // allow navigation after the incoming slide has finished mounting/animating
-        setIsTransitioning(false);
+        // Small delay to ensure slide is fully rendered
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 50);
       });
     });
   };
 
   const handlePrevious = () => {
-    if (isTransitioning) return; // prevent double clicks/swipes
     if (currentSlide === 0) return;
+
+    // Prevent multiple transitions
+    if (isTransitioning) {
+      return;
+    }
+
+    // Additional safety check
+    if (currentSlide < 0 || currentSlide >= slides.length) {
+      return;
+    }
 
     setIsTransitioning(true);
 
@@ -111,9 +243,9 @@ const OnboardingContainer = () => {
         toValue: 50,
         duration: 300,
         useNativeDriver: true,
-      })
+      }),
     ]).start(() => {
-      setCurrentSlide(prev => prev - 1);
+      setCurrentSlide((prev) => prev - 1);
 
       fadeAnim.setValue(0);
       slideAnim.setValue(-50);
@@ -128,52 +260,54 @@ const OnboardingContainer = () => {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        })
+        }),
       ]).start(() => {
-        setIsTransitioning(false);
+        // Small delay to ensure slide is fully rendered
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 50);
       });
     });
   };
 
   // Create PanResponder for swipe gestures - recreate when currentSlide changes
-  const panResponder = useMemo(() =>
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Disable swiping completely on the last slide or while transitioning
-        if (currentSlide === slides.length - 1 || isTransitioning) {
-          return false;
-        }
-        return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 100;
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        // Optional: Add visual feedback during swipe
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        const { dx } = gestureState;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (evt, gestureState) => {
+          // Disable swiping completely on the last slide or during transition
+          if (currentSlide === slides.length - 1 || isTransitioning) {
+            return false;
+          }
+          return (
+            Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 100
+          );
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          // Optional: Add visual feedback during swipe
+        },
+        onPanResponderRelease: (evt, gestureState) => {
+          // Don't respond to gestures during transition
+          if (isTransitioning) {
+            return;
+          }
 
-        // Swipe left (next slide)
-        if (dx < -50) {
-          handleNext();
-        }
-        // Swipe right (previous slide)
-        else if (dx > 50) {
-          handlePrevious();
-        }
-      },
-    }), [currentSlide, handleNext, handlePrevious, isTransitioning]);
+          const { dx } = gestureState;
 
-  if (isLoading) return (
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#fff'
-    }}>
-      <ActivityIndicator size="large" color="#3898b3" />
-      <Text style={{ marginTop: 20, color: '#666' }}>Authenicating...</Text>
-    </View>
+          // Swipe left (next slide)
+          if (dx < -50) {
+            handleNext();
+          }
+          // Swipe right (previous slide)
+          else if (dx > 50) {
+            handlePrevious();
+          }
+        },
+      }),
+    [currentSlide, handleNext, handlePrevious, isTransitioning]
   );
 
+  if (loading) return <LoadingScreen />;
   return (
     <View style={styles.container}>
       <OnboardingHeader />
@@ -183,39 +317,30 @@ const OnboardingContainer = () => {
           styles.content,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
+            transform: [{ translateY: slideAnim }],
+          },
         ]}
         {...panResponder.panHandlers}
       >
-        {current ? (
-          <OnboardingSlide
-            title={current.title}
-            description={current.description}
-            image={current.image}
-          />
-        ) : null}
+        <OnboardingSlide
+          key={`slide-${currentSlide}`}
+          title={slides[currentSlide]?.title || ""}
+          description={slides[currentSlide]?.description || ""}
+          image={slides[currentSlide]?.image}
+        />
       </Animated.View>
 
       <OnboardingFooter
         ref={footerRef}
         onNext={handleNext}
+        onPrevious={handlePrevious}
         onComplete={handleComplete}
         currentSlide={currentSlide}
         totalSlides={slides.length}
         isLastSlide={currentSlide === slides.length - 1}
-        // pass true when transitioning or navigating away to fully disable the button
-        isTransitioning={isTransitioning || isNavigating}
+        isTransitioning={isTransitioning}
+        isCompleting={isCompleting}
       />
-
-      {/* Overlay to block interactions and show loader while transitioning */}
-      {isTransitioning && (
-        <View style={styles.loadingOverlay} pointerEvents="auto">
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#3898b3" />
-          </View>
-        </View>
-      )}
     </View>
   );
 };
@@ -223,26 +348,13 @@ const OnboardingContainer = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
     paddingHorizontal: width * 0.01, // 1% of screen width for padding
     paddingVertical: height * 0.01, // 1% of screen height for padding
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 50,
-  },
-  loadingBox: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    padding: 20,
-    borderRadius: 12,
-    elevation: 6,
   },
 });
 

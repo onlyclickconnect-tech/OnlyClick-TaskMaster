@@ -253,14 +253,14 @@ export default function Earnings() {
             <Text style={styles.primaryActionText}>Withdraw Money</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.secondaryAction} onPress={() => setAutoPayoutModalVisible(true)}>
+          {/* <TouchableOpacity style={styles.secondaryAction} onPress={() => setAutoPayoutModalVisible(true)}>
             <Ionicons name="settings" size={20} color="#4ab9cf" />
             <Text style={styles.secondaryActionText}>Auto Payout</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Bank Details Card */}
-        <View style={styles.bankCard}>
+        {/* <View style={styles.bankCard}>
           <View style={styles.bankHeader}>
             <Ionicons name="business" size={20} color="#4ab9cf" />
             <Text style={styles.bankTitle}>Bank Account</Text>
@@ -271,7 +271,7 @@ export default function Earnings() {
           <Text style={styles.bankName}>{data.bankDetails.bankName}</Text>
           <Text style={styles.accountNumber}>Account: {data.bankDetails.accountNumber}</Text>
           <Text style={styles.ifsc}>IFSC: {data.bankDetails.ifsc}</Text>
-        </View>
+        </View> */}
 
         {/* Filter Pills */}
         <View style={styles.filterContainer}>

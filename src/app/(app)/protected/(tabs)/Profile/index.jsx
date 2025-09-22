@@ -237,7 +237,7 @@ export default function ProfilePage() {
 
   const profileMenuItems = [
     { id: 2, title: 'Work History', subtitle: 'View your completed jobs', icon: 'briefcase-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/WorkHistory') },
-    { id: 3, title: 'Payment Methods', subtitle: 'Manage your payment methods', icon: 'card-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/PaymentMethods') },
+    // { id: 3, title: 'Payment Methods', subtitle: 'Manage your payment methods', icon: 'card-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/PaymentMethods') },
     { id: 4, title: 'Documents', subtitle: 'Manage your verification documents', icon: 'document-text-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/Documents') },
     { id: 5, title: 'Help & Support', subtitle: 'Get help and contact support', icon: 'help-circle-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/HelpSupport') },
   ];
@@ -359,7 +359,7 @@ export default function ProfilePage() {
         </View>
 
         {/* Stats Section */}
-        <View style={styles.statsContainer}>
+        {/* <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statNumberSmall} numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>4.8</Text>
             <Text style={styles.statLabel}>Rating</Text>
@@ -374,10 +374,10 @@ export default function ProfilePage() {
             <Text style={styles.statNumber} numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>₹45,670</Text>
             <Text style={styles.statLabel}>Total Earned</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Settings Section */}
-        <View style={styles.settingsSection}>
+        {/* <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
           <View style={styles.settingItem}>
@@ -415,7 +415,7 @@ export default function ProfilePage() {
               thumbColor="#fff"
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Menu Items */}
         <View style={styles.menuSection}>

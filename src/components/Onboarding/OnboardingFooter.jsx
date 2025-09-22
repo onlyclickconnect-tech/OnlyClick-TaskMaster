@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSlides, isLastSlide, isTransitioning }, ref) => {
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Text from "../ui/Text";
+const OnboardingFooter = forwardRef(function OnboardingFooter({ onNext, onPrevious, onComplete, currentSlide, totalSlides, isLastSlide, isTransitioning, isCompleting }, ref) {
   const buttonAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -12,8 +12,11 @@ const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSl
     }).start();
   }, []);
 
-  const handleButtonPress = () => {
-    if (isTransitioning) return; // prevent during transition or navigation
+  const handleNextPress = () => {
+    // Prevent button press during transition or completion
+    if (isTransitioning || isCompleting) {
+      return;
+    }
 
     if (isLastSlide) {
       onComplete();
@@ -22,30 +25,24 @@ const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSl
     }
   };
 
-  // Expose the button press function to parent component
+  const handleBackPress = () => {
+    // Prevent button press during transition or completion
+    if (isTransitioning || isCompleting) {
+      return;
+    }
+
+    onPrevious();
+  };
+
+  // Expose the button press functions to parent component
   useImperativeHandle(ref, () => ({
-    pressButton: handleButtonPress
+    pressNextButton: handleNextPress,
+    pressBackButton: handleBackPress
   }));
 
   const renderDots = () => {
-    // Hide dots on the last slide
-    if (isLastSlide) {
-      return null;
-    }
-    
-    return (
-      <View style={styles.dotsContainer}>
-        {Array.from({ length: totalSlides }).map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              index === currentSlide ? styles.activeDot : styles.inactiveDot
-            ]}
-          />
-        ))}
-      </View>
-    );
+    // Dots are removed as per user request
+    return null;
   };
 
   return (
@@ -64,22 +61,37 @@ const OnboardingFooter = forwardRef(({ onNext, onComplete, currentSlide, totalSl
     ]}>
       {renderDots()}
       
-      <TouchableOpacity 
-        style={[
-          styles.nextButton,
-          isLastSlide && styles.getStartedButton // Add special styling for last slide button
-        ]} 
-        onPress={handleButtonPress}
-        disabled={isTransitioning}
-      >
-        {isTransitioning ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
+      <View style={styles.buttonContainer}>
+        {currentSlide > 0 && (
+          <TouchableOpacity 
+            style={[
+              styles.backButton,
+              (isTransitioning || isCompleting) && styles.disabledButton
+            ]} 
+            onPress={handleBackPress}
+            disabled={isTransitioning || isCompleting}
+          >
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* Invisible spacer to push next button to the right when no back button */}
+        {currentSlide === 0 && <View style={styles.buttonSpacer} />}
+        
+        <TouchableOpacity 
+          style={[
+            styles.nextButton,
+            isLastSlide && styles.getStartedButton,
+            (isTransitioning || isCompleting) && styles.disabledButton
+          ]} 
+          onPress={handleNextPress}
+          disabled={isTransitioning || isCompleting}
+        >
           <Text style={styles.nextButtonText}>
             {isLastSlide ? 'Get Started' : 'Next'}
           </Text>
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 });
@@ -94,37 +106,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
   footerLastSlide: {
-    bottom: 50, // More space from bottom when no dots
+    bottom: 30, // Same spacing as regular footer since no dots
   },
-  dotsContainer: {
+  buttonContainer: {
     flexDirection: 'row',
-    marginBottom: 30,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
+  buttonSpacer: {
+    minWidth: 100, // Same as back button minWidth
   },
-  activeDot: {
-    backgroundColor: '#3898b3',
-    width: 24,
+  backButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#3898b3',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    minWidth: 100,
+    alignItems: 'center',
   },
-  inactiveDot: {
-    backgroundColor: '#D1D5DB',
+  backButtonText: {
+    color: '#3898b3',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   nextButton: {
     backgroundColor: '#3898b3',
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 25,
-    minWidth: 120,
+    minWidth: 100,
     alignItems: 'center',
   },
   getStartedButton: {
-    paddingHorizontal: 50, // Wider button for "Get Started"
-    paddingVertical: 18, // Slightly taller
-    minWidth: 160, // Wider minimum width
+    paddingHorizontal: 35,
+    paddingVertical: 15,
+    minWidth: 140,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   nextButtonText: {
     color: '#fff',
@@ -133,4 +155,5 @@ const styles = StyleSheet.create({
   },
 });
 
+OnboardingFooter.displayName = 'OnboardingFooter';
 export default OnboardingFooter;
