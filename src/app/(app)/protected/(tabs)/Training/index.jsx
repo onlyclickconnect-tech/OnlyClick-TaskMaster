@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -12,109 +12,71 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import AppHeader from "../../../../../components/common/AppHeader";
+import AppHeader from '../../../../../components/common/AppHeader';
+import { getTrainingVideos } from '../../../../api/trainingVideos';
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-// Mock training videos data
-const trainingVideos = [
-  {
-    id: '1',
-    title: 'Introduction to TaskMaster',
-    description: 'Learn the basics of using TaskMaster platform',
-    duration: '5:30',
-    category: 'Getting Started',
-    thumbnail: 'https://picsum.photos/300/200?random=1',
-    videoUrl: 'https://example.com/video1.mp4',
-    views: '1.2K',
-    rating: 4.8
-  },
-  {
-    id: '2',
-    title: 'Customer Service Excellence',
-    description: 'Master the art of providing exceptional customer service',
-    duration: '8:45',
-    category: 'Customer Service',
-    thumbnail: 'https://picsum.photos/300/200?random=2',
-    videoUrl: 'https://example.com/video2.mp4',
-    views: '856',
-    rating: 4.9
-  },
-  {
-    id: '3',
-    title: 'Safety Protocols & Best Practices',
-    description: 'Essential safety guidelines for service providers',
-    duration: '12:20',
-    category: 'Safety',
-    thumbnail: 'https://picsum.photos/300/200?random=3',
-    videoUrl: 'https://example.com/video3.mp4',
-    views: '2.1K',
-    rating: 4.7
-  },
-  {
-    id: '4',
-    title: 'Pricing Strategies for Services',
-    description: 'How to set competitive and profitable pricing',
-    duration: '7:15',
-    category: 'Business',
-    thumbnail: 'https://picsum.photos/300/200?random=4',
-    videoUrl: 'https://example.com/video4.mp4',
-    views: '654',
-    rating: 4.6
-  },
-  {
-    id: '5',
-    title: 'Emergency Response Training',
-    description: 'Handle emergency situations professionally',
-    duration: '15:30',
-    category: 'Safety',
-    thumbnail: 'https://picsum.photos/300/200?random=5',
-    videoUrl: 'https://example.com/video5.mp4',
-    views: '3.2K',
-    rating: 4.9
-  },
-  {
-    id: '6',
-    title: 'Quality Assurance Checklist',
-    description: 'Ensure high-quality service delivery every time',
-    duration: '6:45',
-    category: 'Quality',
-    thumbnail: 'https://picsum.photos/300/200?random=6',
-    videoUrl: 'https://example.com/video6.mp4',
-    views: '789',
-    rating: 4.5
-  }
-];
-
-const categories = [
-  'All',
-  'Getting Started',
-  'Customer Service',
-  'Safety',
-  'Business',
-  'Quality'
-];
+// Helper function to extract YouTube video ID from URL
+const extractVideoId = (url) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
 
 export default function Training() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [trainingVideos, setTrainingVideos] = useState([]);
+  const [categories, setCategories] = useState(['All']);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTrainingVideos = async () => {
+      try {
+        setLoading(true);
+        const data = await getTrainingVideos("Plumbing");
+
+        // Transform Supabase data to component format
+        const transformedVideos = data.map(video => ({
+          id: video.id.toString(),
+          title: video.Title,
+          category: video.category.trim(), // Remove any trailing whitespace
+          youtubeUrl: video.youtube_url,
+        }));
+
+        setTrainingVideos(transformedVideos);
+
+        // Extract unique categories
+        const uniqueCategories = ['All', ...new Set(transformedVideos.map(video => video.category))];
+        setCategories(uniqueCategories);
+
+      } catch (err) {
+        console.error('Error fetching training videos:', err);
+        setError('Failed to load training videos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrainingVideos();
+  }, []);
 
   const filteredVideos = selectedCategory === 'All'
     ? trainingVideos
     : trainingVideos.filter(video => video.category === selectedCategory);
 
   const handleVideoPress = (video) => {
-    Alert.alert(
-      'Video Playback',
-      `Playing: ${video.title}\n\nDuration: ${video.duration}\nViews: ${video.views}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Watch Now', onPress: () => {
-          // In a real app, this would navigate to a video player
-          console.log('Playing video:', video.title);
-        }}
-      ]
-    );
+    router.push({
+      pathname: "/(app)/protected/(tabs)/Training/video-player",
+      params: {
+        youtubeUrl: video.youtubeUrl,
+        title: video.title,
+        category: video.category,
+      }
+    });
   };
 
   const renderCategoryButton = (category) => (
@@ -143,13 +105,17 @@ export default function Training() {
     >
       <View style={styles.videoThumbnailContainer}>
         <Image
-          source={{ uri: item.thumbnail }}
+          source={{ uri: `https://img.youtube.com/vi/${extractVideoId(item.youtubeUrl)}/maxresdefault.jpg` }}
           style={styles.videoThumbnail}
           resizeMode="cover"
+          onError={(e) => {
+            // Fallback to default thumbnail if maxresdefault fails
+            e.target.source = { uri: `https://img.youtube.com/vi/${extractVideoId(item.youtubeUrl)}/hqdefault.jpg` };
+          }}
         />
         <View style={styles.playButtonOverlay}>
           <View style={styles.playButton}>
-            <Ionicons name="play" size={24} color="#fff" />
+            <Ionicons name="logo-youtube" size={24} color="#fff" />
           </View>
         </View>
         <View style={styles.durationBadge}>
@@ -166,14 +132,6 @@ export default function Training() {
         </Text>
 
         <View style={styles.videoMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="eye-outline" size={14} color="#666" />
-            <Text style={styles.metaText}>{item.views}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="star" size={14} color="#FFD700" />
-            <Text style={styles.metaText}>{item.rating}</Text>
-          </View>
           <View style={styles.categoryTag}>
             <Text style={styles.categoryTagText}>{item.category}</Text>
           </View>
@@ -182,31 +140,71 @@ export default function Training() {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <AppHeader title="Training" showBack={true} onBack={() => router.back()} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3898B3" />
+          <Text style={styles.loadingText}>Loading training videos...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <AppHeader title="Training" showBack={true} onBack={() => router.back()} />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Text style={styles.errorTitle}>Error Loading Videos</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+              // Re-fetch videos
+              const fetchVideos = async () => {
+                try {
+                  const data = await getTrainingVideos();
+                  const transformedVideos = data.map(video => ({
+                    id: video.id.toString(),
+                    title: video.Title,
+                    category: video.category.trim(),
+                    youtubeUrl: video.youtube_url,
+                  }));
+                  setTrainingVideos(transformedVideos);
+                  const uniqueCategories = ['All', ...new Set(transformedVideos.map(video => video.category))];
+                  setCategories(uniqueCategories);
+                } catch (err) {
+                  setError('Failed to load training videos');
+                } finally {
+                  setLoading(false);
+                }
+              };
+              fetchVideos();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <AppHeader title="Training" showBack={true} onBack={() => router.back()} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Categories */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesContainer}
-          >
-            {categories.map(category => renderCategoryButton(category))}
-          </ScrollView>
-        </View>
+        
 
         {/* Videos List */}
         <View style={styles.videosSection}>
-          <View style={styles.videosHeader}>
-            <Text style={styles.sectionTitle}>
-              {selectedCategory === 'All' ? 'All Videos' : `${selectedCategory} Videos`}
-            </Text>
-            <Text style={styles.videoCount}>{filteredVideos.length} videos</Text>
-          </View>
+          
 
           <FlatList
             data={filteredVideos}
@@ -235,6 +233,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FF6B6B',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#3898B3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   content: {
     flex: 1,
   },
@@ -246,7 +286,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 15,
+    marginBottom:15,
     paddingHorizontal: 20,
   },
   categoriesContainer: {
@@ -276,7 +316,7 @@ const styles = StyleSheet.create({
   },
   videosSection: {
     flex: 1,
-    marginTop: 10,
+    marginTop: 20,
   },
   videosHeader: {
     flexDirection: 'row',
@@ -366,7 +406,7 @@ const styles = StyleSheet.create({
   videoMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   metaItem: {
     flexDirection: 'row',
