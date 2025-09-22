@@ -116,12 +116,6 @@ export default function Data({ userStats, isLoading }) {
       textColor: "white",
     },
     {
-      number: totalRequests,
-      text: "Total Requests",
-      bgColor: "#3ea2bb",
-      textColor: "white",
-    },
-    {
       number: totalAssigned,
       text: "Total Assigned",
       bgColor: "#3ea2bb",

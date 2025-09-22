@@ -1,18 +1,19 @@
 import { router } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { StatusBar, View, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StatusBar, Text, View } from 'react-native';
 import SignInFooter from '../../../components/SignIn/SignInFooter';
 import SignInForm from '../../../components/SignIn/SignInForm';
 import SignInHeader from '../../../components/SignIn/SignInHeader';
 import SignInIllustration from '../../../components/SignIn/SignInIllustration';
 import { useAuth } from '../../../context/AuthProvider';
-import * as Linking from 'expo-linking';
 
 export default function SignIn() {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { requestLinkOTP, isLoggedIn } = useAuth();
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
+    const { requestLinkOTP, isLoggedIn, isLoading: authLoading } = useAuth();
     
     // If user is already logged in, redirect to home
     useEffect(() => {
@@ -45,6 +46,11 @@ export default function SignIn() {
             return;
         }
 
+        if (!acceptTerms) {
+            setError('Please accept the Terms of Service and Privacy Policy');
+            return;
+        }
+
         setIsLoading(true);
         setError('');
 
@@ -52,11 +58,7 @@ export default function SignIn() {
             const result = await requestLinkOTP(email);
             
             if (result.success) {
-                Alert.alert(`Email Send Successfully to ${email}`)
-                // Directly navigate to OTP (no loading). Loading should only appear after Aadhaar verification.
-                // const emailQ = encodeURIComponent(email);
-                // For now aadhar is not verified automatically instead manual verification will be done.
-                // router.push(`/auth/aadharVerify`); 
+                setEmailSent(true);
             } else {
                 setError(result.error || 'Failed to send OTP. Please try again.');
             }
@@ -68,18 +70,31 @@ export default function SignIn() {
         }
     };
 
+    // Show loading while auth is initializing to prevent flash
+    if (authLoading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+                <ActivityIndicator size="large" color="#3898b3" />
+                <Text style={{ marginTop: 20, color: '#666', fontSize: 16 }}>Checking authentication...</Text>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#fff" />
             <SignInHeader />
             <SignInIllustration />
             <SignInForm 
-                setIsLoading={setIsLoading}
                 email={email}
                 error={error}
                 onEmailChange={handleEmailChange}
                 onSignIn={handleSignIn}
                 isLoading={isLoading}
+                acceptTerms={acceptTerms}
+                setAcceptTerms={setAcceptTerms}
+                emailSent={emailSent}
             />
             <SignInFooter />
         </View>

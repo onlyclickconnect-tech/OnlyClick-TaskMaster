@@ -11,7 +11,8 @@ export default function RootLayout() {
     <View style={{ flex: 1 }}>
       <Stack initialRouteName="(tabs)">
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-  <Stack.Screen name="Notifications" options={{ presentation: "modal", headerShown: false }} />
+        <Stack.Screen name="Notifications" options={{ presentation: "modal", headerShown: false }} />
+        
         <Stack.Screen
           name="[customJob]"
           options={{
