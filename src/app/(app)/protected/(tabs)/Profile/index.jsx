@@ -12,11 +12,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { useAuth } from '../../../../../context/AuthProvider';
 
@@ -50,12 +49,6 @@ export default function ProfilePage() {
   }, [isLoggedIn,user])
 
   useEffect(() => {
-    (async () => {
-      const cameraStatus = await Camera.requestCameraPermissionsAsync();
-      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      setCameraPermission(cameraStatus.status === 'granted');
-      setHasCameraPermission(cameraStatus.status === 'granted');
-    })();
     // initialise editable fields from user and displayUser
     if (user) {
       setEditableName(userData?.name || '');
@@ -68,6 +61,20 @@ export default function ProfilePage() {
 
   const openCamera = async () => {
     try {
+      // Request camera permission only when camera is actually used
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      setCameraPermission(cameraStatus.status === 'granted');
+      setHasCameraPermission(cameraStatus.status === 'granted');
+
+      if (cameraStatus.status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Required',
+          'Camera access is needed to take photos. Please enable camera permissions in your device settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -86,6 +93,18 @@ export default function ProfilePage() {
 
   const openImageLibrary = async () => {
     try {
+      // Request media library permission only when image library is actually used
+      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (mediaLibraryStatus.status !== 'granted') {
+        Alert.alert(
+          'Photo Library Permission Required',
+          'Photo library access is needed to select photos. Please enable photo library permissions in your device settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -98,7 +117,7 @@ export default function ProfilePage() {
         Alert.alert('Success', 'Profile picture updated successfully!');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to select image. Please try again.');
+      Alert.alert('Error', 'Failed to select photo. Please try again.');
     }
   };
 
