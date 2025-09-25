@@ -1,9 +1,10 @@
 import { Stack } from "expo-router";
 import { View } from "react-native";
+import { AppStatesProvider } from "../context/AppStates";
 import AuthProvider from "../context/AuthProvider";
 import ModalProvider from "../context/ModalProvider";
-import { AppStatesProvider } from "../context/AppStates";
 import { SocketProvider } from "../context/SocketContext";
+import { BookingsProvider } from "../context/bookingsContext";
 
 export default function RootLayout() {
   return (
@@ -11,13 +12,15 @@ export default function RootLayout() {
       <AuthProvider>
         <SocketProvider>
           <ModalProvider>
-            <View style={{ flex: 1 }}>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="intro" options={{ headerShown: false }} />
-                <Stack.Screen name="(app)" options={{ headerShown: false }} />
-              </Stack>
-            </View>
+            <BookingsProvider>
+              <View style={{ flex: 1 }}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="intro" options={{ headerShown: false }} />
+                  <Stack.Screen name="(app)" options={{ headerShown: false }} />
+                </Stack>
+              </View>
+            </BookingsProvider>
           </ModalProvider>
         </SocketProvider>
       </AuthProvider>

@@ -2,6 +2,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Modal,
@@ -17,6 +18,7 @@ import JobBox from '../../../../../components/Jobs/JobBox';
 import ServiceDetail from '../../../../../components/Jobs/ServiceDetail';
 import AppHeader from '../../../../../components/common/AppHeader';
 import CustomAlert from '../../../../../components/common/CustomAlert';
+import { useBookings } from '../../../../../context/bookingsContext';
 import api from '../../../../api/api';
 
 export default function Index() {
@@ -27,6 +29,7 @@ export default function Index() {
   const [serviceModalMode, setServiceModalMode] = useState('Available'); // Add separate state for modal mode
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [sortBy, setSortBy] = useState('Recent');
@@ -34,147 +37,21 @@ export default function Index() {
   const filters = ['All', 'High Pay', 'Nearby', 'Urgent', 'Regular Customer'];
   const sortOptions = ['Recent', 'Distance', 'Payment', 'Rating'];
 
-  // const initial = {
-  //   Available: [
-  //     { 
-  //       _id: 'a1', 
-  //       customerName: 'Rajesh Kumar', 
-  //       serviceName: 'AC Repair & Service', 
-  //       address: '221B Baker Street, Bandra West', 
-  //       image: 'https://picsum.photos/300',
-  //       distance: '2.3 km',
-  //       estimatedTime: '45 mins',
-  //       payment: '₹850',
-  //       urgency: 'Medium',
-  //       customerRating: 4.8,
-  //       jobPostedTime: '5 mins ago',
-  //       description: 'AC not cooling properly, needs immediate attention',
-  //       serviceType: 'Emergency',
-  //       customerPhone: '+91 98765 43210'
-  //     },
-  //     { 
-  //       _id: 'a2', 
-  //       customerName: 'Priya Sharma', 
-  //       serviceName: 'Plumbing Service', 
-  //       address: '12 Park Avenue, Andheri East', 
-  //       image: 'https://picsum.photos/301',
-  //       distance: '1.8 km',
-  //       estimatedTime: '30 mins',
-  //       payment: '₹650',
-  //       urgency: 'High',
-  //       customerRating: 4.9,
-  //       jobPostedTime: '12 mins ago',
-  //       description: 'Kitchen sink blockage and water leakage',
-  //       serviceType: 'Regular',
-  //       customerPhone: '+91 87654 32109'
-  //     },
-  //     { 
-  //       _id: 'a3', 
-  //       customerName: 'Amit Verma', 
-  //       serviceName: 'Electrical Work', 
-  //       address: '45 Marine Drive, Mumbai Central', 
-  //       image: 'https://picsum.photos/303',
-  //       distance: '3.5 km',
-  //       estimatedTime: '60 mins',
-  //       payment: '₹1200',
-  //       urgency: 'Low',
-  //       customerRating: 4.6,
-  //       jobPostedTime: '25 mins ago',
-  //       description: 'Install new electrical fittings and fix wiring issues',
-  //       serviceType: 'Scheduled',
-  //       customerPhone: '+91 76543 21098'
-  //     },
-  //   ],
-  //   Pending: [
-  //     { 
-  //       _id: 'p1', 
-  //       customerName: 'Sneha Reddy', 
-  //       serviceName: 'Home Cleaning', 
-  //       address: '5 Downing Street, Powai', 
-  //       phone: '+91 98765 43210', 
-  //       image: 'https://picsum.photos/302',
-  //       distance: '2.1 km',
-  //       estimatedTime: '90 mins',
-  //       payment: '₹400',
-  //       urgency: 'Medium',
-  //       customerRating: 4.7,
-  //       jobPostedTime: '1 hour ago',
-  //       description: 'Deep cleaning of 2BHK apartment',
-  //       serviceType: 'Regular',
-  //       status: 'In Progress',
-  //       startTime: '10:30 AM',
-  //       otp: '4528'
-  //     },
-  //     { 
-  //       _id: 'p2', 
-  //       customerName: 'Rahul Gupta', 
-  //       serviceName: 'Appliance Repair', 
-  //       address: '78 Linking Road, Bandra', 
-  //       phone: '+91 87654 32109', 
-  //       image: 'https://picsum.photos/305',
-  //       distance: '1.5 km',
-  //       estimatedTime: '45 mins',
-  //       payment: '₹750',
-  //       urgency: 'High',
-  //       customerRating: 4.5,
-  //       jobPostedTime: '2 hours ago',
-  //       description: 'Washing machine not working properly',
-  //       serviceType: 'Emergency',
-  //       status: 'En Route',
-  //       startTime: '11:00 AM',
-  //       otp: '7329'
-  //     },
-  //   ],
-  //   Completed: [
-  //     { 
-  //       _id: 'c1', 
-  //       customerName: 'Kavya Patel', 
-  //       serviceName: 'Carpentry Work', 
-  //       address: '400 Elm Street, Juhu', 
-  //       image: 'https://picsum.photos/304', 
-  //       amountReceived: '₹1,200', 
-  //       paymentMethod: 'Digital',
-  //       distance: '4.2 km',
-  //       estimatedTime: '120 mins',
-  //       payment: '₹1200',
-  //       urgency: 'Low',
-  //       customerRating: 4.9,
-  //       jobPostedTime: '1 day ago',
-  //       description: 'Custom furniture installation and repair',
-  //       serviceType: 'Scheduled',
-  //       completedTime: '2:30 PM',
-  //       actualDuration: '110 mins',
-  //       customerFeedback: 'Excellent work! Very professional and timely.',
-  //       tipReceived: '₹100'
-  //     },
-  //     { 
-  //       _id: 'c2', 
-  //       customerName: 'Vikram Singh', 
-  //       serviceName: 'Painting Service', 
-  //       address: '33 Hill Road, Bandra', 
-  //       image: 'https://picsum.photos/306', 
-  //       amountReceived: '₹2,500', 
-  //       paymentMethod: 'Cash',
-  //       distance: '3.1 km',
-  //       estimatedTime: '180 mins',
-  //       payment: '₹2500',
-  //       urgency: 'Medium',
-  //       customerRating: 4.8,
-  //       jobPostedTime: '2 days ago',
-  //       description: 'Interior wall painting for bedroom',
-  //       serviceType: 'Regular',
-  //       completedTime: '4:45 PM',
-  //       actualDuration: '175 mins',
-  //       customerFeedback: 'Great job! Clean work and on time.',
-  //       tipReceived: '₹200'
-  //     },
-  //   ],
-  // };
 
   const [available, setAvailable] = useState([]);
-  const [pending, setPending] = useState([]);
-  const [completed, setCompleted] = useState([]);
   const [tabSwitchAnimation] = useState(new Animated.Value(1));
+
+  // Use bookings context for in-progress and completed jobs
+  const {
+    inProgressBookings,
+    completedBookings,
+    refreshing: contextRefreshing,
+    refreshAllBookings,
+    addToInProgress,
+    moveToCompleted,
+    updateInProgressBooking,
+    removeInProgressBooking
+  } = useBookings();
 
   // Custom Alert Modal State
   const [customAlertVisible, setCustomAlertVisible] = useState(false);
@@ -199,34 +76,35 @@ export default function Index() {
   };
 
 
-  // Refresh all jobs function
-  const refreshAllJobs = async () => {
+  // Refresh available jobs (local state only)
+  const refreshAvailableJobs = async () => {
     try {
-      const getPendigs = async () => {
-        const { data, errors } = await api.post('api/v1/getJobsAvailable');
-        if (errors) throw errors
-        setAvailable(data.data)
-      }
-      const getInProgress = async () => {
-        const { data, errors } = await api.post('api/v1/getJobsInProgress');
-        if (errors) throw errors
-        setPending(data.data)
-      }
-      const getCompleted = async () => {
-        const { data, errors } = await api.post('api/v1/getJobsCompleted');
-        if (errors) throw errors
-        setCompleted(data.data)
-      }
-
-      await Promise.all([getPendigs(), getInProgress(), getCompleted()]);
+      const { data, errors } = await api.post('api/v1/getJobsAvailable');
+      if (errors) throw errors;
+      setAvailable(data?.data || []);
     } catch (error) {
-      console.error('Error refreshing jobs:', error);
+      console.error('Error refreshing available jobs:', error);
     }
   };
 
+  // Combined refresh function
+  const refreshAllJobs = async () => {
+    await Promise.all([refreshAvailableJobs(), refreshAllBookings()]);
+  };
+
   useEffect(() => {
-    refreshAllJobs();
-  }, [refreshing])
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await refreshAllJobs();
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
+  }, [])
 
 
 
@@ -464,10 +342,44 @@ export default function Index() {
   const getTabCount = (tab) => {
     switch (tab) {
       case 'Available': return available.length;
-      case 'Pending': return pending.length;
-      case 'Completed': return completed.length;
+      case 'Pending': return inProgressBookings.length;
+      case 'Completed': return completedBookings.length;
       default: return 0;
     }
+  };
+
+  // Helper function to parse relative time strings and convert to timestamp
+  const parseRelativeTime = (timeString) => {
+    if (!timeString) return 0;
+    
+    // Try to parse as regular date first
+    const regularDate = new Date(timeString);
+    if (!isNaN(regularDate.getTime())) {
+      return regularDate.getTime();
+    }
+    
+    // Parse relative time strings like "8 mins ago", "1 days ago", "2 hours ago"
+    const now = Date.now();
+    const timeStr = timeString.toLowerCase();
+    
+    if (timeStr.includes('min')) {
+      const mins = parseInt(timeStr.match(/\d+/)?.[0] || 0);
+      return now - (mins * 60 * 1000);
+    } else if (timeStr.includes('hour')) {
+      const hours = parseInt(timeStr.match(/\d+/)?.[0] || 0);
+      return now - (hours * 60 * 60 * 1000);
+    } else if (timeStr.includes('day')) {
+      const days = parseInt(timeStr.match(/\d+/)?.[0] || 0);
+      return now - (days * 24 * 60 * 60 * 1000);
+    } else if (timeStr.includes('week')) {
+      const weeks = parseInt(timeStr.match(/\d+/)?.[0] || 0);
+      return now - (weeks * 7 * 24 * 60 * 60 * 1000);
+    } else if (timeStr.includes('month')) {
+      const months = parseInt(timeStr.match(/\d+/)?.[0] || 0);
+      return now - (months * 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    return 0;
   };
 
   const filterJobs = (jobs) => {
@@ -498,10 +410,14 @@ export default function Index() {
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'Distance': return parseFloat(a.distance) - parseFloat(b.distance);
         case 'Payment': return parseInt(b.payment.replace('₹', '').replace(',', '')) - parseInt(a.payment.replace('₹', '').replace(',', ''));
         case 'Rating': return b.customerRating - a.customerRating;
-        default: return 0; // Recent - keep original order
+        case 'Recent':
+        default: 
+          // Sort by most recent first (latest at top)
+          const timestampA = parseRelativeTime(a.createdAt || a.jobPostedTime || a.updatedAt);
+          const timestampB = parseRelativeTime(b.createdAt || b.jobPostedTime || b.updatedAt);
+          return timestampB - timestampA; // Most recent first
       }
     });
 
@@ -511,8 +427,8 @@ export default function Index() {
   const getCurrentJobs = () => {
     switch (activeTab) {
       case 'Available': return filterJobs(available);
-      case 'Pending': return filterJobs(pending);
-      case 'Completed': return filterJobs(completed);
+      case 'Pending': return filterJobs(inProgressBookings);
+      case 'Completed': return filterJobs(completedBookings);
       default: return [];
     }
   };
@@ -535,7 +451,7 @@ export default function Index() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#4ab9cf']} />
+          <RefreshControl refreshing={refreshing || contextRefreshing} onRefresh={onRefresh} colors={['#4ab9cf']} />
         }
       >
         {/* Stats Cards */}
@@ -559,7 +475,7 @@ export default function Index() {
               <View style={[styles.statIcon, activeTab === 'Pending' && styles.statIconActive]}>
                 <Ionicons name="time" size={20} color={activeTab === 'Pending' ? "#fff" : "#f39c12"} />
               </View>
-              <Text style={[styles.statNumber, activeTab === 'Pending' && styles.statNumberActive]}>{pending.length}</Text>
+              <Text style={[styles.statNumber, activeTab === 'Pending' && styles.statNumberActive]}>{inProgressBookings.length}</Text>
               <Text style={[styles.statLabel, activeTab === 'Pending' && styles.statLabelActive]}>In Progress</Text>
             </TouchableOpacity>
 
@@ -570,7 +486,7 @@ export default function Index() {
               <View style={[styles.statIcon, activeTab === 'Completed' && styles.statIconActive]}>
                 <Ionicons name="checkmark-circle" size={20} color={activeTab === 'Completed' ? "#fff" : "#27ae60"} />
               </View>
-              <Text style={[styles.statNumber, activeTab === 'Completed' && styles.statNumberActive]}>{completed.length}</Text>
+              <Text style={[styles.statNumber, activeTab === 'Completed' && styles.statNumberActive]}>{completedBookings.length}</Text>
               <Text style={[styles.statLabel, activeTab === 'Completed' && styles.statLabelActive]}>Completed</Text>
             </TouchableOpacity>
           </View>
@@ -595,7 +511,12 @@ export default function Index() {
 
         {/* Jobs List */}
         <Animated.View style={[styles.jobsContainer, { transform: [{ scale: tabSwitchAnimation }] }]}>
-          {getCurrentJobs().length > 0 ? (
+          {initialLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="#4ab9cf" size="large" />
+              <Text style={styles.loadingText}>Loading jobs...</Text>
+            </View>
+          ) : getCurrentJobs().length > 0 ? (
             getCurrentJobs().map((item, index, arr) => (
               <View key={item._id} style={[styles.jobCardWrapper, index === (arr.length - 1) ? styles.lastJobCard : null]}>
                 <JobBox
@@ -886,6 +807,17 @@ const styles = StyleSheet.create({
   },
   lastJobCard: {
     marginBottom: 86,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
