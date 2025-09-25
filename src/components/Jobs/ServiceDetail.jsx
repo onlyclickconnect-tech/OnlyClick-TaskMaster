@@ -368,11 +368,7 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
             <Text style={styles.sectionTitle}>Details</Text>
             <Text style={styles.sectionText}>Service: {service.serviceName}</Text>
             <Text style={styles.sectionText}>Address: {service.address}</Text>
-            <Text style={styles.sectionText}>Payment: {service.payment || service.price || '—'}</Text>
-            <Text style={styles.sectionText}>Distance: {service.distance || '—'}</Text>
             <Text style={styles.sectionText}>Estimated Time: {service.estimatedTime || '—'}</Text>
-            <Text style={styles.sectionText}>Urgency: {service.urgency || '—'}</Text>
-            <Text style={styles.sectionText}>Customer Rating: {service.customerRating ? `${service.customerRating} ⭐` : '—'}</Text>
             {service.description && (
               <Text style={styles.sectionText}>Description: {service.description}</Text>
             )}

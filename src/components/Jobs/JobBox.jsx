@@ -67,7 +67,6 @@ export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPre
         <View style={styles.locationRow}>
           <Ionicons name="location" size={14} color="#7f8c8d" />
           <Text style={styles.address} numberOfLines={1}>{data.address}</Text>
-          <Text style={styles.distance}>{data.distance}</Text>
         </View>
 
         {/* Bottom Row */}
@@ -77,11 +76,7 @@ export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPre
               <Ionicons name="time" size={14} color="#7f8c8d" />
               <Text style={styles.estimatedTime}>{data.estimatedTime}</Text>
             </View>
-            <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(data.urgency) + '20' }]}>
-              <Text style={[styles.urgencyText, { color: getUrgencyColor(data.urgency) }]}>
-                {data.urgency}
-              </Text>
-            </View>
+            
           </View>
 
           {/* Action Buttons */}
