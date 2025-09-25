@@ -1,9 +1,101 @@
 import api from '../app/api/api.js';
 import { requestAuthLink } from '../app/api/requestAuthLink.js';
+import { updateTM } from '../app/api/updateTM.js';
 import { supabase } from '../data/supabaseClient';
-import { updateTM } from '../app/api/updateTM.js'
 
 class SupabaseAuthService {
+  // Sign in with email and password
+  async signInWithPassword(email, password) {
+    try {
+      console.log('Signing in with email and password...');
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (!data.session || !data.user) {
+        throw new Error('No session or user returned from authentication');
+      }
+
+      console.log('Password sign in successful');
+
+      // Get user data from taskmaster table
+      const { data: userData, error: userDataError } = await supabase
+        .schema('onlyclick')
+        .from('taskmaster')
+        .select('*')
+        .eq('tm_id', data.user.id)
+        .single();
+
+      if (userDataError && userDataError.code !== 'PGRST116') {
+        console.log('Error fetching user data:', userDataError);
+      }
+
+      // Determine if user needs profile setup
+      let needsProfileSetup = false;
+      if (!userData || !userData.name || !userData.ph_no) {
+        needsProfileSetup = true;
+      }
+
+      console.log('User data from password sign in:', userData ? 'Found' : 'Not found');
+      console.log('Needs profile setup:', needsProfileSetup);
+
+      return {
+        success: true,
+        session: data.session,
+        user: data.user,
+        userData: userData,
+        needsProfileSetup: needsProfileSetup
+      };
+
+    } catch (error) {
+      console.error('Error signing in with password:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error
+      };
+    }
+  }
+
+  // Register with email and password
+  async signUpWithPassword(email, password) {
+    try {
+      console.log('Signing up with email and password...');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (!data.user) {
+        throw new Error('No user returned from registration');
+      }
+
+      console.log('Password sign up successful');
+
+      return {
+        success: true,
+        session: data.session,
+        user: data.user,
+        needsProfileSetup: true // New users always need profile setup
+      };
+
+    } catch (error) {
+      console.error('Error signing up with password:', error.message);
+      return {
+        success: false,
+        message: error.message,
+        error
+      };
+    }
+  }
+
   // Send magic link to email
   async sendMagicLink(email) {
     try {

@@ -128,6 +128,38 @@ export default function AuthProvider({ children }) {
     }
   };
 
+  // Login with email and password
+  const loginWithPassword = async (email, password) => {
+    try {
+      setError("");
+      setIsLoading(true);
+
+      const response = await supabaseAuthService.signInWithPassword(email, password);
+
+      if (response.success) {
+        console.log('Password login successful');
+        setUser(response.user);
+        setAuthToken(response.session.access_token);
+        setIsLoggedIn(true);
+        setUserData(response.userData);
+        setNeedsProfileSetup(response.needsProfileSetup);
+
+        // Store user details in AsyncStorage
+        await setUserDetails(response.user);
+
+        return { success: true };
+      }
+
+      throw new Error(response.message || 'Password login failed');
+    } catch (error) {
+      console.error('Password login error:', error.message);
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Login with phone and password
   const login = async (phoneNumber, password) => {
     try {
@@ -193,6 +225,40 @@ export default function AuthProvider({ children }) {
       setError(error);
       setIsLoading(false);
       return { success: false, error: error };
+    }
+  };
+
+  // Register with email and password
+  const registerWithPassword = async (email, password) => {
+    try {
+      setError("");
+      setIsLoading(true);
+
+      const response = await supabaseAuthService.signUpWithPassword(email, password);
+
+      if (response.success) {
+        console.log('Password registration successful');
+        setUser(response.user);
+        if (response.session) {
+          setAuthToken(response.session.access_token);
+          setIsLoggedIn(true);
+        }
+        setUserData(null); // New user has no profile data yet
+        setNeedsProfileSetup(response.needsProfileSetup);
+
+        // Store user details in AsyncStorage
+        await setUserDetails(response.user);
+
+        return { success: true };
+      }
+
+      throw new Error(response.message || 'Registration failed');
+    } catch (error) {
+      console.error('Password registration error:', error.message);
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -385,6 +451,8 @@ export default function AuthProvider({ children }) {
     isLoading,
     error,
     login,
+    loginWithPassword,
+    registerWithPassword,
     loginWithOTP,
     requestLinkOTP,
     register,

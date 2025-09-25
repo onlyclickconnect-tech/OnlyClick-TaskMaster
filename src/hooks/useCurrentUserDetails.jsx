@@ -6,19 +6,19 @@ function useCurrentUserDetails() {
     isLoggedIn = { isLoggedIn }
   ) => {};
   return {
-    name: user.name,
-    email: user.email,
-    userAddress: user.address,
-    phone: user.phone,
-    profileImage: user.profileImage,
-    _id: user._id,
-    reviews: user.reviews,
-    ratings: user.ratings,
-    userId: user.taskMasterId,
-    service: user.service,
+    name: user?.name,
+    email: user?.email,
+    userAddress: user?.address,
+    phone: user?.phone,
+    profileImage: user?.profileImage,
+    _id: user?._id,
+    reviews: user?.reviews,
+    ratings: user?.ratings,
+    userId: user?.taskMasterId,
+    service: user?.service,
     isLoggedIn,
-    authToken: user.authToken,
-    refreshToken: user.refreshToken,
+    authToken: user?.authToken,
+    refreshToken: user?.refreshToken,
   };
 }
 
