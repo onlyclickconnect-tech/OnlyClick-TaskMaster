@@ -27,25 +27,27 @@ export default function Home() {
 
   const fetchDashboardData = async () => {
     try {
-      // Dummy data for user stats
-      const dummyStats = {
-        totalBookings: 10,
-        completedBookings: 8,
-        pendingBookings: 2,
-      };
+      // // Dummy data for user stats
+      // const dummyStats = {
+      //   totalBookings: 10,
+      //   completedBookings: 8,
+      //   pendingBookings: 2,
+      // };
 
-      // Dummy data for recent bookings
-      const dummyBookings = [
-        { id: 1, service: "Plumbing", date: "2025-08-15" },
-        { id: 2, service: "Electrical", date: "2025-08-14" },
-        { id: 3, service: "Cleaning", date: "2025-08-13" },
-        { id: 4, service: "Painting", date: "2025-08-12" },
-        { id: 5, service: "Carpentry", date: "2025-08-11" },
-      ];
+      // // Dummy data for recent bookings
+      // const dummyBookings = [
+      //   { id: 1, service: "Plumbing", date: "2025-08-15" },
+      //   { id: 2, service: "Electrical", date: "2025-08-14" },
+      //   { id: 3, service: "Cleaning", date: "2025-08-13" },
+      //   { id: 4, service: "Painting", date: "2025-08-12" },
+      //   { id: 5, service: "Carpentry", date: "2025-08-11" },
+      // ];
 
-      // Simulate API response
-      setUserStats(dummyStats);
-      setRecentBookings(dummyBookings);
+      // // Simulate API response
+      // setUserStats(dummyStats);
+      // setRecentBookings(dummyBookings);
+      
+
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {

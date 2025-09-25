@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading, acceptTerms, setAcceptTerms, emailSent }) => {
+const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading, acceptTerms, setAcceptTerms, emailSent, onToggleAuthMode }) => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [modalType, setModalType] = useState(""); // "terms" or "privacy"
 
@@ -213,6 +213,19 @@ For questions about this privacy policy, please contact us through the app.`
                     <Text style={styles.signInButtonText}>{emailSent ? 'Email Sent' : 'Sign In'}</Text>
                 )}
             </TouchableOpacity>
+
+            {/* Switch to Password Mode */}
+            {onToggleAuthMode && (
+                <TouchableOpacity 
+                    style={styles.switchModeButton}
+                    onPress={onToggleAuthMode}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.switchModeText}>
+                        Or sign in with email and password
+                    </Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 };
@@ -338,6 +351,16 @@ const styles = StyleSheet.create({
     },
     signInButtonDisabled: {
         backgroundColor: '#a0c4cf',
+    },
+    switchModeButton: {
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    switchModeText: {
+        color: '#2082AA',
+        fontSize: 14,
+        fontWeight: '500',
+        textDecorationLine: 'underline',
     },
     // Terms Modal Styles
     modalOverlay: {
