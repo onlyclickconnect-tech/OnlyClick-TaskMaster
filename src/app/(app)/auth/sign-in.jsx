@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StatusBar, StyleSheet, Text, View } from 'react-native';
 import SignInFooter from '../../../components/SignIn/SignInFooter';
 import SignInForm from '../../../components/SignIn/SignInForm';
 import SignInFormPassword from '../../../components/SignIn/SignInFormPassword';
@@ -16,6 +16,7 @@ export default function SignIn() {
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
     const [authMode, setAuthMode] = useState('password'); // 'password' or 'magiclink'
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const { requestLinkOTP, loginWithPassword, isLoggedIn, isLoading: authLoading } = useAuth();
     
     // If user is already logged in, redirect to home
@@ -25,6 +26,21 @@ export default function SignIn() {
             router.replace('/(app)/protected/(tabs)/Home');
         }
     }, [isLoggedIn]);
+
+    // Keyboard listeners
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+            setIsKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setIsKeyboardVisible(false);
+        });
+
+        return () => {
+            keyboardDidShowListener?.remove();
+            keyboardDidHideListener?.remove();
+        };
+    }, []);
 
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -147,8 +163,8 @@ export default function SignIn() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-            <SignInHeader />
-            <SignInIllustration />
+            {!isKeyboardVisible && <SignInHeader />}
+            {!isKeyboardVisible && <SignInIllustration />}
             {authMode === 'password' ? (
                 <SignInFormPassword 
                     email={email}
@@ -181,9 +197,9 @@ export default function SignIn() {
     );
 }
 
-const styles = {
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
     },
-};
+});

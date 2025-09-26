@@ -3,9 +3,11 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from "../../context/AuthProvider";
+import { useBookings } from "../../context/bookingsContext";
 
 export default function Data({ userStats, isLoading }) {
   const { user } = useAuth();
+  const { inProgressBookings, completedBookings } = useBookings();
   const router = useRouter();
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
   
@@ -104,9 +106,9 @@ export default function Data({ userStats, isLoading }) {
 
   // Default values with real data integration
   const totalEarnings = userStats?.totalEarnings || 0;
-  const jobsFinished = userStats?.completedBookings || 0;
+  const jobsFinished = completedBookings?.length || 0; // Completed jobs from context
   const totalRequests = userStats?.totalBookings || 0;
-  const totalAssigned = userStats?.activeBookings || 0;
+  const totalAssigned = inProgressBookings?.length || 0; // Pending jobs from context
 
   const data = [
     {
@@ -123,15 +125,10 @@ export default function Data({ userStats, isLoading }) {
     },
   ];
 
-  // Dummy recent bookings data
-  const dummyRecentBookings = [
-    { id: 1, serviceType: "Plumbing", createdAt: "2025-08-15", amount: 500, status: "completed" },
-    { id: 2, serviceType: "Electrical", createdAt: "2025-08-14", amount: 750, status: "in-progress" },
-    { id: 3, serviceType: "Cleaning", createdAt: "2025-08-13", amount: 300, status: "pending" },
-  ];
-
-  // Replace recentBookings prop with dummy data
-  const recentBookings = dummyRecentBookings;
+  // Get recent bookings from context (completed and in-progress only)
+  const allBookings = [...(completedBookings || []), ...(inProgressBookings || [])];
+  const sortedBookings = allBookings.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const recentBookings = sortedBookings.slice(0, 3);
 
   if (isLoading) {
     return (
@@ -270,36 +267,68 @@ export default function Data({ userStats, isLoading }) {
           <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 15 }}>
             Recent Bookings
           </Text>
-          {recentBookings.slice(0, 3).map((booking, index) => (
-            <View
-              key={booking._id || index}
-              style={{
-                backgroundColor: "#f8f9fa",
-                padding: 12,
-                borderRadius: 8,
-                marginBottom: 8,
-                borderLeftWidth: 4,
-                borderLeftColor: booking.status === 'completed' ? '#28a745' : 
-                               booking.status === 'in-progress' ? '#ffc107' : '#6c757d',
-              }}
-            >
-              <Text style={{ fontWeight: "600", color: "#333" }}>
-                {booking.serviceType || "Service"}
-              </Text>
-              <Text style={{ color: "#666", fontSize: 12 }}>
-                {new Date(booking.createdAt).toLocaleDateString()} • Rs. {booking.amount}
-              </Text>
-              <Text style={{ 
-                color: booking.status === 'completed' ? '#28a745' : 
-                       booking.status === 'in-progress' ? '#ffc107' : '#6c757d',
-                fontSize: 12,
-                fontWeight: "500",
-                textTransform: "capitalize"
-              }}>
-                {booking.status}
-              </Text>
-            </View>
-          ))}
+          {recentBookings.slice(0, 3).map((booking, index) => {
+            // Check if booking is in completedBookings array to determine status
+            const isCompleted = completedBookings?.some(job => job._id === booking._id);
+            const statusColor = isCompleted ? '#4CAF50' : '#FFC107';
+            const statusBgColor = isCompleted ? '#E8F5E8' : '#FFF8E1';
+            const statusText = isCompleted ? 'Completed' : 'In Progress';
+            
+            return (
+              <View
+                key={booking._id || index}
+                style={{
+                  backgroundColor: "#fff",
+                  padding: 14,
+                  borderRadius: 12,
+                  marginBottom: 10,
+                  borderLeftWidth: 4,
+                  borderLeftColor: statusColor,
+                  elevation: 2,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <Text style={{ fontWeight: "600", color: "#333", flex: 1, marginRight: 10 }}>
+                    {booking.serviceName || booking.serviceType || "Service"}
+                  </Text>
+                  <View style={{
+                    backgroundColor: statusBgColor,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                  }}>
+                    <Text style={{ 
+                      color: statusColor,
+                      fontSize: 11,
+                      fontWeight: "600",
+                    }}>
+                      {statusText}
+                    </Text>
+                  </View>
+                </View>
+                
+                <Text style={{ color: "#666", fontSize: 12, marginBottom: 4 }}>
+                  {new Date(booking.createdAt).toLocaleDateString()}
+                </Text>
+                
+                {(booking.payment || booking.amount) && (
+                  <Text style={{ color: "#4ab9cf", fontSize: 13, fontWeight: "600" }}>
+                    Rs. {(booking.payment || booking.amount).toLocaleString()}
+                  </Text>
+                )}
+                
+                {booking.customerName && (
+                  <Text style={{ color: "#888", fontSize: 11, marginTop: 2 }}>
+                    Customer: {booking.customerName}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 
