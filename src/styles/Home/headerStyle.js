@@ -6,7 +6,7 @@ export default function HeaderStyle() {
 
   const styles = StyleSheet.create({
     header: {
-      height: screenHeight * 0.18, // Increased from 0.20 to give more space
+      height: screenHeight * 0.12, // Increased from 0.20 to give more space
       width: screenWidth,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },

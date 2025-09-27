@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StatusBar, StyleSheet, View } from 'react-native';
 import SignInFooter from '../../../components/SignIn/SignInFooter';
 import SignInForm from '../../../components/SignIn/SignInForm';
 import SignInFormPassword from '../../../components/SignIn/SignInFormPassword';
 import SignInHeader from '../../../components/SignIn/SignInHeader';
 import SignInIllustration from '../../../components/SignIn/SignInIllustration';
 import { useAuth } from '../../../context/AuthProvider';
+import Text from '../../../components/ui/Text';
 
 export default function SignIn() {
     const [email, setEmail] = useState('');

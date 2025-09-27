@@ -1,4 +1,5 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import Text from '@/src/components/ui/Text';
 import OnboardingContainer from '../../components/Onboarding/OnboardingContainer';
 import { useAuth } from '../../context/AuthProvider';
 

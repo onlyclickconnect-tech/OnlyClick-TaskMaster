@@ -9,11 +9,11 @@ import {
   Animated,
   Modal,
   PanResponder,
-  Text,
   TextInput,
   TouchableOpacity,
   View
 } from "react-native";
+import Text from "../ui/Text";
 import { useAppStates } from "../../context/AppStates";
 import useCurrentUserDetails from "../../hooks/useCurrentUserDetails";
 import useDimension from "../../hooks/useDimensions";
@@ -216,40 +216,7 @@ function Header() {
         </View>
 
         {/* search and profile */}
-        <View style={styles.searchAndProfile}>
-          <View style={styles.search}>
-            <View
-              style={{
-                height: 25, // Reduced from 30
-                width: 25, // Reduced from 30
-                position: "absolute",
-                left: 20,
-                zIndex: 1,
-              }}
-            >
-              <FontAwesome name="search" size={18} color="#30a7c8ff" /> {/* Reduced from 24 */}
-            </View>
-            <TextInput
-              placeholder="Search"
-              style={styles.searchText}
-              value={search}
-              onChangeText={setSearch}
-              returnKeyType="search"
-              placeholderTextColor="grey"
-              onSubmitEditing={searchService}
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.profile}
-            onPress={() => {
-              // Navigate to the Profile tab in the protected app tabs
-              router.push('/(app)/protected/(tabs)/Profile');
-            }}
-            accessibilityLabel="Open profile"
-          >
-            <Ionicons name="person-sharp" size={28} color="#07689f" borderRadius={15} padding={5} backgroundColor="#ffffffff" />
-          </TouchableOpacity>
-        </View>
+        
       </LinearGradient>
     </>
   );

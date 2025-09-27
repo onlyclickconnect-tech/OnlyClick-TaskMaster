@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import useDimension from "../../../../../hooks/useDimensions";
 import Feather from "@expo/vector-icons/Feather";
@@ -7,6 +7,7 @@ import Entypo from "@expo/vector-icons/Entypo";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { OtpInput } from "react-native-otp-entry";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import Text from "../../../../../components/ui/Text";
 
 export default function BookingDetail() {
   const [isStarted, setIsStarted] = useState(true);

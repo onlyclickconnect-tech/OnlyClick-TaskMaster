@@ -1,5 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import Text from '../ui/Text';
 
 const BottomLinks = () => {
   return (

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Alert } from "react-native";
+import { ScrollView, StyleSheet, View, TouchableOpacity, Alert } from "react-native";
+import Text from "../../../../../components/ui/Text";
 import { router } from "expo-router";
 import { useAppStates } from "../../../../../context/AppStates";
 import AdvancedOptions from "../../../../../components/Profile/AdvancedOptions";

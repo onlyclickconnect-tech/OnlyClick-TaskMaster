@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppStates } from '../../../context/AppStates';
 import { useAuth } from '../../../context/AuthProvider';
 import supabaseAuthService from '../../../services/supabaseAuthService';
-
+import Text from '../../../components/ui/Text';
 export default function ProfileSetup() {
   const { user, setUser, authToken, setNeedsProfileSetup, userData, setUserData} = useAuth();
   const { markProfileCompleted } = useAppStates();

@@ -1,5 +1,5 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import Text from '../ui/Text';
 export default function LoadingSpinner({ title, subtitle, showProgress = false, progressWidth = '0%', showSpinner = true }) {
   return (
     <View style={styles.container}>

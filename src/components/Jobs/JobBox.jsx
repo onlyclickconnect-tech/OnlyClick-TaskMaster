@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import Text from '../ui/Text';
 
 export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPress }) {
   const router = useRouter();

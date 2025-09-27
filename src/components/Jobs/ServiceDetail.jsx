@@ -7,11 +7,11 @@ import {
   Modal,
   PanResponder,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Text from '../ui/Text';
 import api from '../../app/api/api';
 import CustomAlert from '../common/CustomAlert';
 

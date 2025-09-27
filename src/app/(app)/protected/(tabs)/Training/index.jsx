@@ -8,10 +8,10 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View
 } from "react-native";
+import Text from '../../../../../components/ui/Text';
 import AppHeader from '../../../../../components/common/AppHeader';
 import { getTrainingVideos } from '../../../../api/trainingVideos';
 

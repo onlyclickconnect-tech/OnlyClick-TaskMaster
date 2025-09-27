@@ -1,6 +1,8 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { useEffect, useRef } from "react";
-import { Animated, Easing, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import Text from '../ui/Text';
+
 import useDimension from "../../hooks/useDimensions";
 
 const ProfileHeader = ({ isGeneral = true, setIsGeneral = () => {} }) => {

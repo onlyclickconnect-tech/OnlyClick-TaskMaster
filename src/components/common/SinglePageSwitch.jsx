@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View, ScrollView } from "react-native";
+import { Pressable, StyleSheet,  View, ScrollView } from "react-native";
+import Text from "../ui/Text";
 import React, { useState } from "react";
 
 export default function SinglePageSwitch({

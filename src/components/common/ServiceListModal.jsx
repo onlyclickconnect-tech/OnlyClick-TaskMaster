@@ -9,12 +9,11 @@ import {
   PanResponder,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import serviceService from '../../services/serviceService';
-
+import Text from '../ui/Text';
 const { width, height } = Dimensions.get('window');
 
 const ServiceListModal = ({ visible, onClose, userCategory }) => {

@@ -1,15 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuth } from "../../context/AuthProvider";
 import { useBookings } from "../../context/bookingsContext";
+import Text from '../ui/Text';
 
 export default function Data({ userStats, isLoading }) {
   const { user } = useAuth();
-  const { inProgressBookings, completedBookings } = useBookings();
+  const { inProgressBookings, completedBookings, refreshAllBookings, loading: bookingsLoading } = useBookings();
   const router = useRouter();
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
+  
+  // Refresh bookings when component mounts and when user focuses on home tab
+  useFocusEffect(
+    useCallback(() => {
+      refreshAllBookings();
+    }, [])
+  );
   
   // Sync isActive with user.isActive
   useEffect(() => {
@@ -130,7 +138,7 @@ export default function Data({ userStats, isLoading }) {
   const sortedBookings = allBookings.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   const recentBookings = sortedBookings.slice(0, 3);
 
-  if (isLoading) {
+  if (isLoading || bookingsLoading) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -170,7 +178,7 @@ export default function Data({ userStats, isLoading }) {
       </View>
 
       {/* Worker Status Toggle */}
-      <View 
+      {/* <View 
         style={[
           styles.statusToggleContainer, 
           { borderLeftColor: isActive ? "#4CAF50" : "#FF5722" }
@@ -196,10 +204,10 @@ export default function Data({ userStats, isLoading }) {
             ios_backgroundColor="#3e3e3e"
           />
         </View>
-      </View>
+      </View> */}
 
       {/* View Services Button */}
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={styles.servicesButton}
         onPress={() => router.push('/(app)/protected/Services')}
       >
@@ -213,7 +221,7 @@ export default function Data({ userStats, isLoading }) {
           </View>
           <Ionicons name="chevron-forward" size={20} color="#4ab9cf" />
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <View
         style={{

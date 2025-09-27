@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
+import Text from "../ui/Text";
 import { useAuth } from "../../context/AuthProvider";
 import useDimension from "../../hooks/useDimensions";
 
@@ -39,12 +40,7 @@ export default function Info({ userStats, isLoading }) {
     }
   });
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    return "Good Evening";
-  };
+
 
   const displayName = user?.name || user?.fullName || "Taskmaster";
   const profileImageUri = user?.profileImage || user?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(displayName) + "&background=3898b3&color=fff&size=200";
@@ -56,7 +52,7 @@ export default function Info({ userStats, isLoading }) {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={{ fontSize: 25, fontWeight: "500" }}>{getGreeting()}, Taskmaster</Text>
+        
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3898b3" />
           <Text style={{ marginTop: 10, color: "#666" }}>Loading profile...</Text>
@@ -67,7 +63,6 @@ export default function Info({ userStats, isLoading }) {
 
   return (
     <View style={styles.container}>
-      <Text style={{ fontSize: 25, fontWeight: "500" }}>{getGreeting()}, {displayName}</Text>
       <View style={styles.infoContainer}>
         <View style={styles.profileImage}>
           <Image

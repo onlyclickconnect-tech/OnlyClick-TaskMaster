@@ -4,11 +4,10 @@ import {
     Platform,
     StatusBar as RNStatusBar,
     StyleSheet,
-    Text,
     TouchableOpacity,
     View
 } from 'react-native';
-
+import Text from '../ui/Text';
 export default function AppHeader({
   title = '',
   showBack = false,

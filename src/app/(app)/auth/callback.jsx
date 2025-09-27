@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { View, ActivityIndicator, Text } from "react-native";
+import { View, ActivityIndicator} from "react-native";
+import Text from '../../../components/ui/Text';
 
 export default function authCallback() {
   const router = useRouter();

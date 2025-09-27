@@ -4,11 +4,10 @@ import {
     Animated,
     Modal,
     StyleSheet,
-    Text,
     TouchableOpacity,
     View,
 } from 'react-native';
-
+import Text from '../ui/Text';
 export default function CustomAlert({ 
   visible, 
   onClose, 
