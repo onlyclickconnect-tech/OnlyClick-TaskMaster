@@ -4,12 +4,12 @@ import {
   StyleSheet,
   Pressable,
   Image,
-  Text,
   TouchableOpacity,
 } from "react-native";
 import useDimension from "../../hooks/useDimensions";
 import { useModal } from "@/src/context/ModalProvider";
 import { useEffect, useState } from "react";
+import Text from "../ui/Text";
 
 const ServiceModal = () => {
   const { isServiceModalOpen, setIsServiceModalOpen } = useModal();

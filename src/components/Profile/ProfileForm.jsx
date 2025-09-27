@@ -1,6 +1,8 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { useRef, useState } from "react";
-import { Animated, Dimensions, Easing, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Dimensions, Easing, StyleSheet,TextInput, View } from "react-native";
+import Text from '../ui/Text';
+
 import useCurrentUserDetails from "../../hooks/useCurrentUserDetails";
 
 const screenWidth = Dimensions.get("window").width;

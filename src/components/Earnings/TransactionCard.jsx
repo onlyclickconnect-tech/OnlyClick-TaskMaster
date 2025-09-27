@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import Text from "../ui/Text";
 import TransactionInfoBox from "./TransactionInfoBox";
 
 export default function TransactionCard({ data, onItemPress }) {

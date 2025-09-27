@@ -4,9 +4,9 @@ import {
   StyleSheet,
   Pressable,
   Image,
-  Text,
   TouchableOpacity,
 } from "react-native";
+import Text from "../ui/Text";
 import useDimension from "../../hooks/useDimensions";
 import { useModal } from "../../context/ModalProvider";
 import { useRouter } from "expo-router";

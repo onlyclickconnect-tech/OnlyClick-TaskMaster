@@ -1,7 +1,8 @@
 import * as NavigationBar from "expo-navigation-bar/src/NavigationBar.android";
 import { usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
+import Text from "../components/ui/Text";
 import { useAppStates } from "../context/AppStates";
 import { useAuth } from "../context/AuthProvider";
 

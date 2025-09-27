@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import SignInFooter from '../../../components/SignIn/SignInFooter';
 import SignInHeader from '../../../components/SignIn/SignInHeader';
 import SignInIllustration from '../../../components/SignIn/SignInIllustration';
 import { useAuth } from '../../../context/AuthProvider';
+import Text from '../../../components/ui/Text';
 
 export default function Register() {
     const [email, setEmail] = useState('');

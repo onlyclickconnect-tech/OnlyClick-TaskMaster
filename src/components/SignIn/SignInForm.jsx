@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '../ui/Text';
 const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading, acceptTerms, setAcceptTerms, emailSent, onToggleAuthMode }) => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [modalType, setModalType] = useState(""); // "terms" or "privacy"

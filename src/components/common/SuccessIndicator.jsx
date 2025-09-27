@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
-
+import { StyleSheet, View } from 'react-native';
+import Text from '../ui/Text';
 export default function SuccessIndicator({ title, subtitle, message, iconColor = '#4CAF50' }) {
   return (
     <View style={styles.container}>

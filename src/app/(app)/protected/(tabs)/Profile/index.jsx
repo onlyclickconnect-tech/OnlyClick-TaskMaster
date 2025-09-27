@@ -12,11 +12,11 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
+import Text from '../../../../../components/ui/Text';
 import { useAuth } from '../../../../../context/AuthProvider';
 
 import AppHeader from '../../../../../components/common/AppHeader';
@@ -257,7 +257,6 @@ export default function ProfilePage() {
   const profileMenuItems = [
     { id: 2, title: 'Work History', subtitle: 'View your completed jobs', icon: 'briefcase-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/WorkHistory') },
     // { id: 3, title: 'Payment Methods', subtitle: 'Manage your payment methods', icon: 'card-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/PaymentMethods') },
-    { id: 4, title: 'Documents', subtitle: 'Manage your verification documents', icon: 'document-text-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/Documents') },
     { id: 5, title: 'Help & Support', subtitle: 'Get help and contact support', icon: 'help-circle-outline', onPress: () => router.push('/(app)/protected/(tabs)/Profile/HelpSupport') },
   ];
 
@@ -281,9 +280,9 @@ export default function ProfilePage() {
               }}
               style={styles.profileImage}
             />
-            <TouchableOpacity style={styles.editImageButton} onPress={showImagePicker}>
+            {/* <TouchableOpacity style={styles.editImageButton} onPress={showImagePicker}>
               <Ionicons name="camera" size={18} color="#fff" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           <View style={styles.profileInfo}>
@@ -298,9 +297,9 @@ export default function ProfilePage() {
                 <>
                   <View style={styles.nameRow}>
                     <Text style={styles.userName}>{displayName}</Text>
-                    <TouchableOpacity onPress={() => setEditMode(true)} style={styles.editIconSmall}>
+                    {/* <TouchableOpacity onPress={() => setEditMode(true)} style={styles.editIconSmall}>
                       <Ionicons name="pencil" size={16} color="#4ab9cf" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
 
                   <Text style={styles.userCategory}>{displayCategory}</Text>
@@ -481,11 +480,6 @@ export default function ProfilePage() {
             </>
           )}
         </TouchableOpacity>
-
-        {/* App Version */}
-        <View style={styles.footer}>
-          <Text style={styles.versionText}>TaskMaster v1.0.0</Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -884,7 +878,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#e74c3c',
     marginHorizontal: 20,
     marginTop: 12,
-    padding: 14,
+    marginBottom: 100,
+    padding: 16,
     borderRadius: 12,
     elevation: 2,
   },

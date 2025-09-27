@@ -8,11 +8,11 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
+import Text from '../../../../../components/ui/Text';
 import TransactionCard from '../../../../../components/Earnings/TransactionCard';
 import AppHeader from '../../../../../components/common/AppHeader';
 

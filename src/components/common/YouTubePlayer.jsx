@@ -4,10 +4,10 @@ import {
     Dimensions,
     Modal,
     StyleSheet,
-    Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import Text from '../ui/Text';
 import YoutubePlayer from 'react-native-youtube-iframe';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');

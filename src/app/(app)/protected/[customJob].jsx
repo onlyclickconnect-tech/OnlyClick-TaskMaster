@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
+import Text from "../../../components/ui/Text";
 import { Ionicons } from "@expo/vector-icons";
 // Dummy job request data
 const jobRequest = {
