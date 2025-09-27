@@ -194,38 +194,50 @@ export default function Training() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <AppHeader title="Training" showBack={true} onBack={() => router.back()} />
+  // return (
+  //   <View style={styles.container}>
+  //     <AppHeader title="Training" showBack={true} onBack={() => router.back()} />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Categories */}
+  //     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+  //       {/* Categories */}
         
 
-        {/* Videos List */}
-        <View style={styles.videosSection}>
+  //       {/* Videos List */}
+  //       <View style={styles.videosSection}>
           
 
-          <FlatList
-            data={filteredVideos}
-            renderItem={renderVideoCard}
-            keyExtractor={(item) => `video-${item.id}`}
-            scrollEnabled={false}
-            contentContainerStyle={styles.videosList}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Ionicons name="videocam-outline" size={64} color="#DDD" />
-                <Text style={styles.emptyTitle}>No videos found</Text>
-                <Text style={styles.emptySubtitle}>
-                  Try selecting a different category
-                </Text>
-              </View>
-            }
-          />
-        </View>
-      </ScrollView>
-    </View>
-  );
+  //         <FlatList
+  //           data={filteredVideos}
+  //           renderItem={renderVideoCard}
+  //           keyExtractor={(item) => `video-${item.id}`}
+  //           scrollEnabled={false}
+  //           contentContainerStyle={styles.videosList}
+  //           ListEmptyComponent={
+  //             <View style={styles.emptyContainer}>
+  //               <Ionicons name="videocam-outline" size={64} color="#DDD" />
+  //               <Text style={styles.emptyTitle}>No videos found</Text>
+  //               <Text style={styles.emptySubtitle}>
+  //                 Try selecting a different category
+  //               </Text>
+  //             </View>
+  //           }
+  //         />
+  //       </View>
+  //     </ScrollView>
+  //   </View>
+  // );
+
+  return(
+    <View style={styles.container}>
+      <AppHeader title="Training" showBack={true} onBack={() => router.back()} />
+      <Image
+        source={require('../../../../../../assets/images/comingSoon.png')}
+        style={styles.comingSoonImage}
+        resizeMode="contain"
+      />
+    </View> 
+  )
+
 }
 
 const styles = StyleSheet.create({
@@ -257,6 +269,12 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     marginTop: 16,
     marginBottom: 8,
+  },
+    comingSoonImage: {
+    width: screenWidth * 0.8,
+    height: screenHeight * 0.5,
+    alignSelf: 'center',
+    marginTop: 100,
   },
   errorText: {
     fontSize: 16,
