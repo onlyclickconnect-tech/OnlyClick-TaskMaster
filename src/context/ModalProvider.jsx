@@ -4,7 +4,7 @@ const ModalContext = createContext();
 
 export default function ModalProvider({ children }) {
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-  const [isCustomModalOpen, setIsCustomModalOpen] = useState(true);
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false); // Changed from true to false
   const [isAutoPayoutModalOpen, setIsAutoPayoutModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [isEnterAmountModalOpen, setIsEnterAmountModalOpen] = useState(false);
