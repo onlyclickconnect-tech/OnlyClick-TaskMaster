@@ -6,20 +6,108 @@ import {
   Linking,
   Modal,
   PanResponder,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Text from '../ui/Text';
 import api from '../../app/api/api';
 import CustomAlert from '../common/CustomAlert';
+import Text from '../ui/Text';
 
 export default function ServiceDetail({ visible, onClose, service, mode = 'Pending', onAccept, onComplete }) {
   const [otp, setOtp] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
+
+  // Check if this is a grouped job
+  const isGroupedJob = service && service.jobs && Array.isArray(service.jobs);
+  const jobsToDisplay = isGroupedJob ? service.jobs : [service].filter(Boolean);
+
+  // Format time slot for user-friendly display
+  const formatTimeSlot = (timeSlot) => {
+    if (!timeSlot || timeSlot === 'any-time') return null;
+    
+    // If it's a full timestamp like "2025-10-12 16:00:00", extract just the time part
+    if (timeSlot.includes('-') && timeSlot.includes(' ')) {
+      try {
+        // Extract the time part from "2025-10-12 16:00:00"
+        const timePart = timeSlot.split(' ')[1]; // Gets "16:00:00"
+        const timeOnly = timePart.split(':'); // Gets ["16", "00", "00"]
+        const hour = parseInt(timeOnly[0]);
+        const minutes = timeOnly[1] || '00';
+        
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        
+        // Also extract date for display
+        const datePart = timeSlot.split(' ')[0]; // Gets "2025-10-12"
+        const [year, month, day] = datePart.split('-');
+        const date = new Date(year, month - 1, day); // Create date without timezone issues
+        const dateStr = date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        
+        return `${displayHour}:${minutes} ${ampm} • ${dateStr}`;
+      } catch (e) {
+        console.log('Error parsing timestamp:', e);
+        return timeSlot;
+      }
+    }
+    
+    // If it's a timestamp with T, format it properly
+    if (timeSlot.includes('T')) {
+      try {
+        const date = new Date(timeSlot);
+        const timeStr = date.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit', 
+          hour12: true 
+        });
+        const dateStr = date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        return `${timeStr} • ${dateStr}`;
+      } catch (e) {
+        return timeSlot;
+      }
+    }
+    
+    // If it's time format like "09:00", "14:30", etc. (24-hour format from backend)
+    if (timeSlot.includes(':') && !timeSlot.includes('AM') && !timeSlot.includes('PM')) {
+      try {
+        const [hours, minutes] = timeSlot.split(':');
+        const hour = parseInt(hours);
+        const min = minutes || '00'; // Handle cases where minutes might be missing
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${min} ${ampm}`;
+      } catch (e) {
+        return timeSlot;
+      }
+    }
+    
+    // If it's already formatted with AM/PM
+    if (timeSlot.includes('AM') || timeSlot.includes('PM')) {
+      return timeSlot;
+    }
+    
+    return timeSlot;
+  };
+
+  // Format amount to 2 decimal places
+  const formatAmount = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
 
   // Custom Alert State
   const [alertVisible, setAlertVisible] = useState(false);
@@ -49,23 +137,70 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
   };
 
   const panResponder = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: (evt, gestureState) => true,
-    onMoveShouldSetPanResponder: (evt, gestureState) => Math.abs(gestureState.dy) > 5 && Math.abs(gestureState.dx) < 20,
+    onStartShouldSetPanResponder: (evt, gestureState) => {
+      // Only respond to gestures that start in the drag handle area
+      const isInDragArea = evt.nativeEvent.locationY < 50; // Only top 50px (drag handle area)
+      return isInDragArea;
+    },
+    onMoveShouldSetPanResponder: (evt, gestureState) => {
+      // Only respond to significant downward movements from the drag handle
+      const isDownwardDrag = gestureState.dy > 15 && Math.abs(gestureState.dx) < 50;
+      const isInDragArea = evt.nativeEvent.locationY < 50;
+      return isDownwardDrag && isInDragArea;
+    },
+    onPanResponderGrant: (evt, gestureState) => {
+      // Start tracking the gesture
+      translateY.setOffset(translateY._value);
+      translateY.setValue(0);
+    },
     onPanResponderMove: (evt, gestureState) => {
-      // only allow downward drag
-      if (gestureState.dy > 0) translateY.setValue(gestureState.dy);
+      // Only allow downward drag and limit the movement
+      const dragValue = Math.max(0, Math.min(gestureState.dy, 300));
+      translateY.setValue(dragValue);
     },
     onPanResponderRelease: (evt, gestureState) => {
-      const shouldClose = gestureState.dy > 120 || gestureState.vy > 1.2;
+      // Reset offset
+      translateY.flattenOffset();
+      
+      // Determine if should close based on drag distance and velocity
+      const dragDistance = gestureState.dy;
+      const dragVelocity = gestureState.vy;
+      
+      // More strict conditions for closing
+      const shouldClose = 
+        (dragDistance > 120 && dragVelocity > 0.5) || // Dragged far enough with some velocity
+        (dragDistance > 80 && dragVelocity > 2) ||    // Quick drag
+        dragDistance > 200;                           // Very far drag regardless of velocity
+      
       if (shouldClose) {
-        // animate down then close
-        Animated.timing(translateY, { toValue: 500, duration: 200, useNativeDriver: true }).start(() => {
+        // Animate down and close
+        Animated.timing(translateY, { 
+          toValue: 400, 
+          duration: 250, 
+          useNativeDriver: true 
+        }).start(() => {
           close();
           translateY.setValue(0);
         });
       } else {
-        Animated.timing(translateY, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+        // Snap back to original position with smooth animation
+        Animated.spring(translateY, { 
+          toValue: 0, 
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8
+        }).start();
       }
+    },
+    onPanResponderTerminate: (evt, gestureState) => {
+      // If gesture is interrupted, snap back
+      translateY.flattenOffset();
+      Animated.spring(translateY, { 
+        toValue: 0, 
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8
+      }).start();
     },
   })).current;
 
@@ -158,11 +293,13 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
     console.log('=== SUBMIT OTP CALLED ===');
     console.log('OTP entered:', otp);
     console.log('Service data before API call:', service);
+    console.log('Is grouped job:', isGroupedJob);
     
     // Show processing alert
+    const jobCount = isGroupedJob ? service.jobs.length : 1;
     showCustomAlert({
       title: 'Verifying OTP',
-      message: 'Please wait while we verify your OTP...',
+      message: `Please wait while we verify your OTP for ${jobCount} job${jobCount > 1 ? 's' : ''}...`,
       type: 'info',
       processing: true,
       showCancel: false,
@@ -172,38 +309,69 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
     setSubmitting(true);
     
     try {
-      // Prepare request payload matching backend expectations
-      const requestPayload = {
-        _id: service._id || service.id,  // Booking ID
-        otp: otp  // OTP entered by user
-      };
+      let results;
       
-      console.log('=== MAKING API CALL ===');
-      console.log('API URL: api/v1/verifyJobComplete');
-      console.log('Request payload:', requestPayload);
-      
-      // Make API call to verify job completion
-      const response = await api.post('api/v1/verifyJobComplete', requestPayload);
-      
-      console.log('=== API RESPONSE SUCCESS ===');
-      console.log('Response data:', response.data);
+      if (isGroupedJob && service.jobs) {
+        // Handle grouped jobs - submit OTP for each job
+        console.log('Processing grouped jobs:', service.jobs.length);
+        const otpPromises = service.jobs.map(job => {
+          const requestPayload = {
+            _id: job._id || job.id,
+            otp: otp
+          };
+          console.log('Submitting OTP for job:', requestPayload);
+          return api.post('api/v1/verifyJobComplete', requestPayload);
+        });
+        
+        results = await Promise.allSettled(otpPromises);
+        console.log('Grouped OTP results:', results);
+      } else {
+        // Handle single job
+        const requestPayload = {
+          _id: service.id || service.id,  // Booking ID
+          otp: otp  // OTP entered by user
+        };
+        
+        console.log('=== MAKING API CALL ===');
+        console.log('API URL: api/v1/verifyJobComplete');
+        console.log('Request payload:', requestPayload);
+        
+        const response = await api.post('api/v1/verifyJobComplete', requestPayload);
+        results = [{ status: 'fulfilled', value: response, reason: null }];
+      }
       
       setSubmitting(false);
       hideCustomAlert();
       
-      // Backend returns { success: true } on successful OTP verification
-      if (response.data && response.data.success) {
+      // Process results
+      const successful = results.filter(result => 
+        result.status === 'fulfilled' && result.value?.data?.success
+      ).length;
+      
+      const failed = jobCount - successful;
+      
+      console.log(`OTP verification completed: ${successful} successful, ${failed} failed`);
+      
+      if (successful > 0) {
         setOtp(''); // Clear OTP input
+        
+        let message = isGroupedJob 
+          ? `Successfully verified OTP for ${successful} job${successful > 1 ? 's' : ''}!`
+          : 'OTP verified successfully. The job has been marked as completed and payment will be processed.';
+          
+        if (failed > 0) {
+          message += ` ${failed} job${failed > 1 ? 's' : ''} failed verification.`;
+        }
         
         showCustomAlert({
           title: 'OTP Verified!',
-          message: 'OTP verified successfully. The job has been marked as completed and payment will be processed.',
-          type: 'success',
+          message: message,
+          type: successful === jobCount ? 'success' : 'warning',
           buttons: [
             {
               text: 'Great!',
               onPress: () => {
-                console.log('Job completed successfully, calling onComplete and closing modal');
+                console.log('Job(s) completed successfully, calling onComplete and closing modal');
                 hideCustomAlert();
                 if (onComplete) onComplete(service);
                 close();
@@ -214,10 +382,12 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
           jobDetails: service
         });
       } else {
-        // Unexpected response format
+        // All verifications failed
         showCustomAlert({
           title: 'Verification Failed',
-          message: 'Unexpected response from server. Please try again.',
+          message: isGroupedJob 
+            ? 'All OTP verifications failed. Please check the OTP and try again.'
+            : 'OTP verification failed. Please check the OTP and try again.',
           type: 'error',
           buttons: [
             {
@@ -342,35 +512,148 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
   return (
     <Modal visible={visible} animationType="none" transparent presentationStyle="overFullScreen">
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.container, { transform: [{ translateY }] }]} {...panResponder.panHandlers}>
-          {/* drag handle - attach pan responder here so inner buttons don't block drags */}
+        <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
+          {/* Enhanced drag handle - only attach pan responder here */}
           <View style={styles.dragHandle} {...panResponder.panHandlers}>
             <View style={styles.dragBar} />
           </View>
           <View style={styles.headerRow}>
-            <Text style={styles.title}>{service.serviceName}</Text>
+            <Text style={styles.title}>
+              {isGroupedJob ? `${service.customerName} - ${service.jobs.length} Jobs` : service.serviceName}
+            </Text>
           </View>
 
-          <View style={styles.topRow}>
-            <Image source={{ uri: service.image || 'https://picsum.photos/200' }} style={styles.image} />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.name}>{service.customerName}</Text>
-              <Text style={styles.address}>{service.address}</Text>
-              <Text style={styles.info}>Booking ID: {service._id || '—'}</Text>
+          <ScrollView 
+            style={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {/* Move OTP section to top for pending jobs */}
+            {mode === 'Pending' && (
+              <View style={styles.otpSectionBig}>
+                <Text style={styles.otpTitle}>
+                  {isGroupedJob 
+                    ? `Enter OTP to complete all ${service.jobs.length} jobs`
+                    : 'Enter OTP to complete job'
+                  }
+                </Text>
+                <TextInput
+                  value={otp}
+                  onChangeText={setOtp}
+                  placeholder="Enter 4-digit OTP"
+                  keyboardType="number-pad"
+                  style={[
+                    styles.otpInputLarge,
+                    (submitting || alertConfig.processing) && styles.disabledInput
+                  ]}
+                  maxLength={6}
+                  editable={!submitting && !alertConfig.processing}
+                />
+                <TouchableOpacity 
+                  style={[
+                    styles.submitBtn,
+                    (submitting || alertConfig.processing) && styles.disabledButton
+                  ]} 
+                  onPress={submitOtp} 
+                  disabled={submitting || alertConfig.processing}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.submitText}>
+                    {(submitting || alertConfig.processing) ? 'Verifying...' : 'Submit OTP'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            <View style={styles.topRow}>
+              <Image source={{ uri: service.image || 'https://picsum.photos/200' }} style={styles.image} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.name}>{service.customerName}</Text>
+                <Text style={styles.address}>{service.address}</Text>
+                {isGroupedJob && service.timeSlot && service.timeSlot !== 'any-time' && (
+                  <Text style={styles.info}>Time Slot: {formatTimeSlot(service.timeSlot)}</Text>
+                )}
+                <Text style={styles.info}>
+                  {isGroupedJob ? `Group ID: ${service._id}` : `Booking ID: ${service._id || '—'}`}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.callBtn} onPress={callCustomer}>
+                <Ionicons name="call" size={18} color="#fff" />
+                <Text style={styles.callText}>Call Customer</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.callBtn} onPress={callCustomer}>
-              <Ionicons name="call" size={18} color="#fff" />
-              <Text style={styles.callText}>Call Customer</Text>
-            </TouchableOpacity>
-          </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Details</Text>
-            <Text style={styles.sectionText}>Service: {service.serviceName}</Text>
-            <Text style={styles.sectionText}>Address: {service.address}</Text>
-            <Text style={styles.sectionText}>Estimated Time: {service.estimatedTime || '—'}</Text>
-            {service.description && (
-              <Text style={styles.sectionText}>Description: {service.description}</Text>
+            <Text style={styles.sectionTitle}>
+              {isGroupedJob ? 'All Services' : 'Details'}
+            </Text>
+            
+            {isGroupedJob ? (
+              // Display all jobs in the group
+              jobsToDisplay.map((job, index) => (
+                <View key={job._id || index} style={styles.jobItem}>
+                  <View style={styles.jobHeader}>
+                    <Text style={styles.jobTitle}>{job.serviceName}</Text>
+                    <Text style={styles.jobPayment}>{job.payment}</Text>
+                  </View>
+                  {job.description && (
+                    <Text style={styles.jobDescription}>{job.description}</Text>
+                  )}
+                  <View style={styles.jobDetailsRow}>
+                    <Text style={styles.jobInfo}>Booking ID: {job._id || '—'}</Text>
+                    {job.timeSlot && job.timeSlot !== 'any-time' && (
+                      <Text style={styles.jobInfo}>Time: {formatTimeSlot(job.timeSlot)}</Text>
+                    )}
+                    {job.paymentMethod && (
+                      <Text style={styles.jobInfo}>Payment: {job.paymentMethod}</Text>
+                    )}
+                    {job.estimatedTime && (
+                      <Text style={styles.jobInfo}>Duration: {job.estimatedTime}</Text>
+                    )}
+                  </View>
+                </View>
+              ))
+            ) : (
+              // Display single job details
+              <>
+                <Text style={styles.sectionText}>Service: {service.serviceName}</Text>
+                <Text style={styles.sectionText}>Address: {service.address}</Text>
+                {service.timeSlot && service.timeSlot !== 'any-time' && (
+                  <Text style={styles.sectionText}>Time Slot: {formatTimeSlot(service.timeSlot)}</Text>
+                )}
+                <Text style={styles.sectionText}>Estimated Time: {service.estimatedTime || '—'}</Text>
+                {service.description && (
+                  <Text style={styles.sectionText}>Description: {service.description}</Text>
+                )}
+              </>
+            )}
+
+            {/* Prominent Payment Mode Section */}
+            {service.paymentMethod && (
+              <View style={styles.paymentModeHighlight}>
+                <View style={[styles.paymentModeBadge, { backgroundColor: service.paymentMethod === 'Pay on Service' ? '#f39c12' : '#27ae60' }]}>
+                  <Ionicons
+                    name={service.paymentMethod === 'Pay on Service' ? 'cash' : 'card'}
+                    size={20}
+                    color="#fff"
+                  />
+                  <Text style={styles.paymentModeBadgeText}>{service.paymentMethod}</Text>
+                </View>
+                <Text style={styles.paymentInstructionText}>
+                  {service.paymentMethod === 'Pay on Service'
+                    ? 'Collect payment from customer when service is completed'
+                    : 'Payment has been received online - no collection needed'
+                  }
+                </Text>
+              </View>
+            )}
+
+            {isGroupedJob && (
+              <View style={styles.totalSection}>
+                <Text style={styles.totalText}>
+                  Total Amount: {formatAmount(service.totalPayment || 0)}
+                </Text>
+              </View>
             )}
           </View>
 
@@ -408,37 +691,7 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
               </TouchableOpacity>
             </View>
           )}
-
-          {mode === 'Pending' && (
-            <View style={styles.otpSectionBig}>
-              <Text style={styles.otpTitle}>Enter OTP to complete job</Text>
-              <TextInput
-                value={otp}
-                onChangeText={setOtp}
-                placeholder="Enter 4-digit OTP"
-                keyboardType="number-pad"
-                style={[
-                  styles.otpInputLarge,
-                  (submitting || alertConfig.processing) && styles.disabledInput
-                ]}
-                maxLength={6}
-                editable={!submitting && !alertConfig.processing}
-              />
-              <TouchableOpacity 
-                style={[
-                  styles.submitBtn,
-                  (submitting || alertConfig.processing) && styles.disabledButton
-                ]} 
-                onPress={submitOtp} 
-                disabled={submitting || alertConfig.processing}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.submitText}>
-                  {(submitting || alertConfig.processing) ? 'Verifying...' : 'Submit OTP'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          </ScrollView>
 
           <View style={[styles.actions, { marginTop: 18 }]}> 
             
@@ -502,9 +755,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 8 },
-  dragHandle: { height: 24, alignItems: 'center', justifyContent: 'center' },
-  dragBar: { width: 48, height: 5, borderRadius: 3, backgroundColor: '#ccc' },
+  dragHandle: { 
+    height: 40, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    paddingVertical: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  dragBar: { 
+    width: 48, 
+    height: 4, 
+    borderRadius: 2, 
+    backgroundColor: '#ddd',
+    marginBottom: 4,
+  },
+  dragText: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scrollContent: { 
+    flex: 1,
+    maxHeight: 600, // Increased height for better UX
+  },
   title: { fontSize: 18, fontWeight: '800' },
   topRow: { flexDirection: 'row', marginTop: 12, alignItems: 'center' },
   image: { width: 84, height: 84, borderRadius: 12, backgroundColor: '#eee' },
@@ -533,4 +809,95 @@ const styles = StyleSheet.create({
   receiptBox: { marginTop: 12, padding: 12, backgroundColor: '#fffaf0', borderRadius: 10, borderWidth: 1, borderColor: '#fde8c0' },
   receiptTitle: { fontWeight: '900', marginBottom: 6 },
   receiptRow: { color: '#333', marginTop: 6 },
+  jobItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4ab9cf',
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  jobTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    flex: 1,
+  },
+  jobPayment: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#27ae60',
+  },
+  jobDescription: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 4,
+    fontStyle: 'italic',
+  },
+  jobInfo: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginBottom: 2,
+  },
+  jobDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#e8f4f8',
+  },
+  jobDetail: {
+    fontSize: 12,
+    color: '#4ab9cf',
+    fontWeight: '500',
+  },
+  totalSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e1e8ed',
+  },
+  totalText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#27ae60',
+    textAlign: 'center',
+  },
+  paymentModeHighlight: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+  },
+  paymentModeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  paymentModeBadgeText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  paymentInstructionText: {
+    fontSize: 14,
+    color: '#2c3e50',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });

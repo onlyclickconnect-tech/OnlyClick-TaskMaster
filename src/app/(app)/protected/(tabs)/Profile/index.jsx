@@ -41,6 +41,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const getdata = async () => {
       const { data, error } = await supabase.auth.session();
+      console.log(userData);
 
       console.error("data", data.session);
       console.error("error", error);
@@ -54,7 +55,7 @@ export default function ProfilePage() {
       setEditableName(userData?.name || '');
       setEditablePhone(userData?.ph_no || '');
       setEditableCategory(userData?.category || '');
-      setProfileImageUri(userData?.tm_profilepic || null);
+      setProfileImageUri(userData?.tm_profilepic);
       setDisplayUser(userData);
     }
   }, []);
@@ -274,15 +275,15 @@ export default function ProfilePage() {
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={{
-                uri: profileImageUri || displayUser?.profileImage || user?.profileImage ||
-                  'https://via.placeholder.com/120/4ab9cf/ffffff?text=User',
-              }}
+              source={
+                userData?.tm_profilepic ? { uri: userData.tm_profilepic } :
+                require("../../../../../../assets/images/avatarPlaceholder.png")
+              }
               style={styles.profileImage}
             />
-            {/* <TouchableOpacity style={styles.editImageButton} onPress={showImagePicker}>
-              <Ionicons name="camera" size={18} color="#fff" />
-            </TouchableOpacity> */}
+            <View style={styles.verificationBadge}>
+              <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+            </View>
           </View>
 
           <View style={styles.profileInfo}>
@@ -305,10 +306,17 @@ export default function ProfilePage() {
                   <Text style={styles.userCategory}>{displayCategory}</Text>
                   <Text style={styles.userPhone}>{displayPhone}</Text>
 
-                  {/* Status Badge */}
-                  <View style={styles.statusBadge}>
-                    <View style={[styles.statusDot, { backgroundColor: '#4CAF50' }]} />
-                    <Text style={styles.statusText}>Active</Text>
+                  {/* Status and ID Row */}
+                  <View style={styles.statusAndIdRow}>
+                    <View style={styles.statusBadge}>
+                      <View style={[styles.statusDot, { backgroundColor: '#4CAF50' }]} />
+                      <Text style={styles.statusText}>Active</Text>
+                    </View>
+
+                    <View style={styles.taskMasterIdContainer}>
+                      <Text style={styles.taskMasterIdLabel}>TaskMaster ID</Text>
+                      <Text style={styles.taskMasterId}>TM00{userData?.id || '00'}</Text>
+                    </View>
                   </View>
 
                   {/* avatar is shown above with camera FAB; no duplicate here */}
@@ -525,11 +533,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   profileImage: {
-    width: 110,
-    height: 110,
+    width: 130,
+    height: 130,
     borderRadius: 55,
-    borderWidth: 4,
+    borderWidth: 0,
     borderColor: '#4ab9cf',
+  },
+  verificationBadge: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 2,
   },
   editImageButton: {
     position: 'absolute',
@@ -938,5 +954,63 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     padding: 8, // Increased padding for better touch area
+  },
+  statusAndIdRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+  },
+  taskMasterIdContainer: {
+    backgroundColor: '#f0f8ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  taskMasterIdLabel: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  taskMasterId: {
+    fontSize: 14,
+    color: '#000000ff',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  quickStatsSection: {
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statLabelSmall: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

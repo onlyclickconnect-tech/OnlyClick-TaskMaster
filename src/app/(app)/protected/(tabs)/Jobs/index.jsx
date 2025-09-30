@@ -13,13 +13,24 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Text from '../../../../../components/ui/Text';
+import GroupedJobBox from '../../../../../components/Jobs/GroupedJobBox';
 import JobBox from '../../../../../components/Jobs/JobBox';
 import ServiceDetail from '../../../../../components/Jobs/ServiceDetail';
 import AppHeader from '../../../../../components/common/AppHeader';
 import CustomAlert from '../../../../../components/common/CustomAlert';
+import Text from '../../../../../components/ui/Text';
 import { useBookings } from '../../../../../context/bookingsContext';
 import api from '../../../../api/api';
+
+const formatAmount = (amount) => {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount.replace('₹', '').replace(',', '')) : amount;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numAmount);
+};
 
 export default function Index() {
   const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
@@ -154,6 +165,61 @@ export default function Index() {
     console.log('Modal should open with mode:', modeOverride || activeTab);
   };
 
+  // Group jobs by customer function (using userId and cartUuid)
+  const groupJobsByCustomer = (jobs) => {
+    const grouped = {};
+
+    jobs.forEach(job => {
+      // Create a unique key using userId and cartUuid
+      const userId = job.userId || job.customerId || job.customer_id;
+      const cartUuid = job.cartUuid || job.cart_uuid || job.cartId || 'no-cart';
+
+      // If no cartUuid, treat as individual job (don't group)
+      const groupKey = cartUuid !== 'no-cart' ? `${userId}-${cartUuid}` : job._id || job.id;
+
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          customerId: userId,
+          customerName: job.customerName || job.name || 'Customer',
+          customerPhone: job.customerPhone || job.phone || '',
+          address: job.address || job.customerAddress || job.location,
+          cartUuid: cartUuid,
+          timeSlot: job.timeSlot || job.time_slot || job.dateTime || null, // Add timeSlot from job
+          jobs: [],
+          totalPayment: 0,
+          createdAt: job.createdAt || job.jobPostedTime || job.date,
+          urgency: job.urgency || 'Normal',
+          _id: groupKey, // Add unique ID for grouped jobs
+          isGrouped: cartUuid !== 'no-cart' // Flag to indicate if this is a grouped job
+        };
+      }
+
+      // Add job to the group
+      grouped[groupKey].jobs.push(job);
+
+      // Calculate total payment
+      const payment = parseInt(job.payment?.replace('₹', '').replace(',', '') || job.amount || 0);
+      grouped[groupKey].totalPayment += payment;
+
+      // Update urgency if any job is urgent
+      if (job.urgency === 'High' || job.urgent) {
+        grouped[groupKey].urgency = 'High';
+      }
+
+      // Keep the earliest created date
+      if (new Date(job.createdAt || job.jobPostedTime || job.date) < new Date(grouped[groupKey].createdAt)) {
+        grouped[groupKey].createdAt = job.createdAt || job.jobPostedTime || job.date;
+      }
+
+      // Update timeSlot if current job has one and group doesn't have it yet
+      if ((job.timeSlot || job.time_slot || job.dateTime) && !grouped[groupKey].timeSlot) {
+        grouped[groupKey].timeSlot = job.timeSlot || job.time_slot || job.dateTime;
+      }
+    });
+
+    return Object.values(grouped);
+  };
+
   const onEnterOtp = (item) => {
     console.log('=== ON ENTER OTP CALLED ===');
     console.log('activeTab:', activeTab);
@@ -182,65 +248,77 @@ export default function Index() {
 
   const handleAccept = (svc) => {
     console.log("=== HANDLE ACCEPT CALLED ===");
-    console.log("handle accept here");
     console.log("svc", svc);
     
+    // Check if this is a grouped job (has jobs array)
+    const isGroupedJob = svc.jobs && Array.isArray(svc.jobs);
+    const jobCount = isGroupedJob ? svc.jobs.length : 1;
+    const totalAmount = isGroupedJob ? svc.totalPayment : parseInt(svc.payment?.replace('₹', '').replace(',', '') || 0);
+    
     showCustomAlert({
-      title: 'Accept Job',
-      message: 'Are you sure you want to accept this job?',
+      title: isGroupedJob ? 'Accept All Jobs' : 'Accept Job',
+      message: isGroupedJob 
+        ? `Are you sure you want to accept all ${jobCount} jobs from ${svc.customerName}?\n\nTotal Amount: ${formatAmount(totalAmount)}`
+        : 'Are you sure you want to accept this job?',
       type: 'warning',
       showCancel: true,
       jobDetails: svc,
       buttons: [
         {
-          text: 'Accept Job',
+          text: isGroupedJob ? 'Accept All Jobs' : 'Accept Job',
           onPress: async () => {
             try {
               // Show loading state
               hideCustomAlert();
               showCustomAlert({
                 title: 'Processing...',
-                message: 'Accepting job, please wait...',
+                message: isGroupedJob ? `Accepting ${jobCount} jobs, please wait...` : 'Accepting job, please wait...',
                 type: 'info',
                 processing: true,
                 showCancel: false,
                 buttons: []
               });
 
-              // Make API call to accept job
-              const { data, error } = await api.post('api/v1/acceptJob', svc);
+              let results;
+              if (isGroupedJob) {
+                // Accept all jobs in the group
+                const acceptPromises = svc.jobs.map(job => 
+                  api.post('api/v1/acceptJob', job)
+                );
+                results = await Promise.allSettled(acceptPromises);
+              } else {
+                // Accept single job
+                const { data, error } = await api.post('api/v1/acceptJob', svc);
+                results = [{ status: error ? 'rejected' : 'fulfilled', value: data, reason: error }];
+              }
               
               hideCustomAlert();
 
-              if (error) {
-                // Show error alert
-                showCustomAlert({
-                  title: 'Error',
-                  message: error.message || 'Failed to accept job. Please try again.',
-                  type: 'error',
-                  showCancel: false,
-                  buttons: [
-                    {
-                      text: 'OK',
-                      onPress: hideCustomAlert
-                    }
-                  ]
-                });
-                return;
-              }
+              const successful = results.filter(result => 
+                result.status === 'fulfilled' && result.value?.data?.success
+              ).length;
+              
+              const failed = jobCount - successful;
 
-              if (data && data.success) {
+              if (successful > 0) {
                 // Success - refresh all jobs and switch to pending tab
                 await refreshAllJobs();
                 setServiceModalVisible(false);
                 
-                // Automatically switch to Pending tab to show the accepted job
+                let message = isGroupedJob 
+                  ? `Successfully accepted ${successful} job${successful > 1 ? 's' : ''} from ${svc.customerName}.`
+                  : `You have successfully accepted the job for ${svc.customerName}.`;
+                
+                if (failed > 0) {
+                  message += `\n\n${failed} job${failed > 1 ? 's' : ''} failed to accept.`;
+                }
+                
                 setTimeout(() => {
                   switchTabWithAnimation('Pending');
                   showCustomAlert({
-                    title: 'Job Accepted!',
-                    message: `You have successfully accepted the job for ${svc.customerName}.\n\nYou are now in the Pending section. Use the OTP button to start the job.`,
-                    type: 'success',
+                    title: successful === jobCount ? (isGroupedJob ? 'All Jobs Accepted!' : 'Job Accepted!') : 'Jobs Partially Accepted',
+                    message: message + '\n\nYou are now in the Pending section. Use the OTP button to start working!',
+                    type: successful === jobCount ? 'success' : 'warning',
                     showCancel: false,
                     jobDetails: svc,
                     buttons: [
@@ -252,10 +330,10 @@ export default function Index() {
                   });
                 }, 300);
               } else {
-                // API returned success: false
+                // All failed
                 showCustomAlert({
-                  title: 'Failed to Accept',
-                  message: data?.message || 'Unable to accept job at this time. Please try again.',
+                  title: 'Failed to Accept Jobs',
+                  message: 'Unable to accept any jobs at this time. Please try again.',
                   type: 'error',
                   showCancel: false,
                   buttons: [
@@ -268,7 +346,7 @@ export default function Index() {
               }
             } catch (err) {
               hideCustomAlert();
-              console.error('Error accepting job:', err);
+              console.error('Error accepting jobs:', err);
               showCustomAlert({
                 title: 'Network Error',
                 message: 'Could not connect to server. Please check your internet connection and try again.',
@@ -387,20 +465,33 @@ export default function Index() {
 
     // Apply search filter
     if (search) {
-      filtered = filtered.filter(job =>
-        job.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        job.serviceName.toLowerCase().includes(search.toLowerCase()) ||
-        job.address.toLowerCase().includes(search.toLowerCase())
-      );
+      filtered = filtered.filter(job => {
+        if (activeTab === 'Available' && job.jobs) {
+          // For grouped jobs (Available tab)
+          return job.customerName.toLowerCase().includes(search.toLowerCase()) ||
+                 job.address.toLowerCase().includes(search.toLowerCase()) ||
+                 job.jobs.some(j => j.serviceName?.toLowerCase().includes(search.toLowerCase()));
+        } else {
+          // For individual jobs (Pending/Completed tabs)
+          return job.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+                 job.serviceName?.toLowerCase().includes(search.toLowerCase()) ||
+                 job.address?.toLowerCase().includes(search.toLowerCase());
+        }
+      });
     }
 
     // Apply category filter
     if (activeFilter !== 'All') {
       filtered = filtered.filter(job => {
         switch (activeFilter) {
-          case 'High Pay': return parseInt(job.payment.replace('₹', '').replace(',', '')) >= 1000;
-          case 'Nearby': return parseFloat(job.distance) <= 2.0;
-          case 'Urgent': return job.urgency === 'High';
+          case 'High Pay': 
+            if (activeTab === 'Available' && job.totalPayment) {
+              return job.totalPayment >= 1000;
+            } else {
+              return parseInt(job.payment?.replace('₹', '').replace(',', '') || 0) >= 1000;
+            }
+          case 'Nearby': return parseFloat(job.distance || 0) <= 2.0;
+          case 'Urgent': return job.urgency === 'High' || job.urgent;
           case 'Regular Customer': return job.customerRating >= 4.8;
           default: return true;
         }
@@ -410,8 +501,13 @@ export default function Index() {
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'Payment': return parseInt(b.payment.replace('₹', '').replace(',', '')) - parseInt(a.payment.replace('₹', '').replace(',', ''));
-        case 'Rating': return b.customerRating - a.customerRating;
+        case 'Payment': 
+          if (activeTab === 'Available') {
+            return (b.totalPayment || 0) - (a.totalPayment || 0);
+          } else {
+            return parseInt(b.payment?.replace('₹', '').replace(',', '') || 0) - parseInt(a.payment?.replace('₹', '').replace(',', '') || 0);
+          }
+        case 'Rating': return (b.customerRating || 0) - (a.customerRating || 0);
         case 'Recent':
         default: 
           // Sort by most recent first (latest at top)
@@ -426,8 +522,12 @@ export default function Index() {
 
   const getCurrentJobs = () => {
     switch (activeTab) {
-      case 'Available': return filterJobs(available);
-      case 'Pending': return filterJobs(inProgressBookings);
+      case 'Available': 
+        const groupedAvailable = groupJobsByCustomer(available);
+        return filterJobs(groupedAvailable);
+      case 'Pending': 
+        const groupedPending = groupJobsByCustomer(inProgressBookings);
+        return filterJobs(groupedPending);
       case 'Completed': return filterJobs(completedBookings);
       default: return [];
     }
@@ -464,7 +564,7 @@ export default function Index() {
               <View style={[styles.statIcon, activeTab === 'Available' && styles.statIconActive]}>
                 <Ionicons name="briefcase" size={20} color={activeTab === 'Available' ? "#fff" : "#4ab9cf"} />
               </View>
-              <Text style={[styles.statNumber, activeTab === 'Available' && styles.statNumberActive]}>{available.length}</Text>
+              <Text style={[styles.statNumber, activeTab === 'Available' && styles.statNumberActive]}>{groupJobsByCustomer(available).length}</Text>
               <Text style={[styles.statLabel, activeTab === 'Available' && styles.statLabelActive]}>Available</Text>
             </TouchableOpacity>
 
@@ -475,7 +575,7 @@ export default function Index() {
               <View style={[styles.statIcon, activeTab === 'Pending' && styles.statIconActive]}>
                 <Ionicons name="time" size={20} color={activeTab === 'Pending' ? "#fff" : "#f39c12"} />
               </View>
-              <Text style={[styles.statNumber, activeTab === 'Pending' && styles.statNumberActive]}>{inProgressBookings.length}</Text>
+              <Text style={[styles.statNumber, activeTab === 'Pending' && styles.statNumberActive]}>{groupJobsByCustomer(inProgressBookings).length}</Text>
               <Text style={[styles.statLabel, activeTab === 'Pending' && styles.statLabelActive]}>In Progress</Text>
             </TouchableOpacity>
 
@@ -518,14 +618,25 @@ export default function Index() {
             </View>
           ) : getCurrentJobs().length > 0 ? (
             getCurrentJobs().map((item, index, arr) => (
-              <View key={item._id} style={[styles.jobCardWrapper, index === (arr.length - 1) ? styles.lastJobCard : null]}>
-                <JobBox
-                  data={item}
-                  isPending={activeTab === 'Pending'}
-                  isCompleted={activeTab === 'Completed'}
-                  onEnterOtp={onEnterOtp}
-                  onPress={() => openService(item, activeTab)}
-                />
+              <View key={activeTab === 'Available' || activeTab === 'Pending' ? item._id || item.customerId : item._id} style={[styles.jobCardWrapper, index === (arr.length - 1) ? styles.lastJobCard : null]}>
+                {activeTab === 'Available' || activeTab === 'Pending' ? (
+                  // Render grouped customer jobs for both Available and Pending
+                  <GroupedJobBox
+                    customerGroup={item}
+                    onAccept={activeTab === 'Available' ? () => handleAccept(item) : () => onEnterOtp(item)}
+                    onPress={() => openService(item, activeTab)}
+                    isPending={activeTab === 'Pending'}
+                  />
+                ) : (
+                  // Render individual jobs for completed only
+                  <JobBox
+                    data={item}
+                    isPending={false}
+                    isCompleted={activeTab === 'Completed'}
+                    onEnterOtp={onEnterOtp}
+                    onPress={() => openService(item, activeTab)}
+                  />
+                )}
               </View>
             ))
           ) : (

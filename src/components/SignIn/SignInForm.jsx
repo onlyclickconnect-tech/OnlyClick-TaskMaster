@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Text from '../ui/Text';
-const SignInForm = ({ email, error, onEmailChange, onSignIn, isLoading, acceptTerms, setAcceptTerms, emailSent, onToggleAuthMode }) => {
+const SignInForm = ({ phoneNumber, error, onPhoneNumberChange, onSignIn, isLoading, acceptTerms, setAcceptTerms, emailSent, onToggleAuthMode }) => {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [modalType, setModalType] = useState(""); // "terms" or "privacy"
 
@@ -144,7 +144,7 @@ For questions about this privacy policy, please contact us through the app.`
             {emailSent ? (
                 <View style={styles.emailSentContainer}>
                     <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                    <Text style={styles.emailSentText}>An email is sent, please verify in email</Text>
+                    <Text style={styles.emailSentText}>An OTP is sent to your phone, please verify</Text>
                 </View>
             ) : null}
             
@@ -153,20 +153,20 @@ For questions about this privacy policy, please contact us through the app.`
             <View style={styles.inputContainer}>
                 <View style={[styles.emailInputWrapper, error ? styles.emailInputError : null]}>
                     <Ionicons
-                        name="mail-outline"
+                        name="call-outline"
                         size={20}
                         color="#666"
                         style={styles.emailIcon}
                     />
                     <TextInput
                         style={styles.emailInput}
-                        placeholder="Enter your email"
+                        placeholder="Enter your phone number"
                         placeholderTextColor="#999"
-                        keyboardType="email-address"
+                        keyboardType="phone-pad"
                         autoCapitalize="none"
                         autoCorrect={false}
-                        value={email}
-                        onChangeText={onEmailChange}
+                        value={phoneNumber}
+                        onChangeText={onPhoneNumberChange}
                         editable={!isLoading}
                     />
                 </View>
@@ -210,7 +210,7 @@ For questions about this privacy policy, please contact us through the app.`
                 {isLoading ? (
                     <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                    <Text style={styles.signInButtonText}>{emailSent ? 'Email Sent' : 'Sign In'}</Text>
+                    <Text style={styles.signInButtonText}>{emailSent ? 'OTP Sent' : 'Send OTP'}</Text>
                 )}
             </TouchableOpacity>
 
@@ -222,7 +222,7 @@ For questions about this privacy policy, please contact us through the app.`
                     activeOpacity={0.7}
                 >
                     <Text style={styles.switchModeText}>
-                        Or sign in with email and password
+                        Or sign in with phone number and password
                     </Text>
                 </TouchableOpacity>
             )}
