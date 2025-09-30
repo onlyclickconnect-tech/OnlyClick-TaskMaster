@@ -4,20 +4,54 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuth } from "../../context/AuthProvider";
 import { useBookings } from "../../context/bookingsContext";
+import earningsService from "../../services/earnings";
 import Text from '../ui/Text';
+
+const formatAmount = (amount) => {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount.replace('₹', '').replace(',', '')) : amount;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numAmount);
+};
 
 export default function Data({ userStats, isLoading }) {
   const { user } = useAuth();
   const { inProgressBookings, completedBookings, refreshAllBookings, loading: bookingsLoading } = useBookings();
   const router = useRouter();
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
+  const [earningsData, setEarningsData] = useState({ totalEarned: 0, wallet: 0, withdrawn: 0 });
+  const [earningsLoading, setEarningsLoading] = useState(false);
   
   // Refresh bookings when component mounts and when user focuses on home tab
   useFocusEffect(
     useCallback(() => {
       refreshAllBookings();
+      loadEarningsData();
     }, [])
   );
+  
+  // Load earnings data from Supabase
+  const loadEarningsData = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setEarningsLoading(true);
+      const earningsSummary = await earningsService.getEarningsSummary(user.id);
+      setEarningsData({
+        totalEarned: earningsSummary.totalEarned || 0,
+        wallet: earningsSummary.wallet || 0,
+        withdrawn: earningsSummary.withdrawn || 0
+      });
+    } catch (error) {
+      console.error('Error loading earnings data:', error);
+      // Keep default values if loading fails
+    } finally {
+      setEarningsLoading(false);
+    }
+  };
   
   // Sync isActive with user.isActive
   useEffect(() => {
@@ -113,7 +147,7 @@ export default function Data({ userStats, isLoading }) {
   });
 
   // Default values with real data integration
-  const totalEarnings = userStats?.totalEarnings || 0;
+  const totalEarnings = earningsData.totalEarned || 0;
   const jobsFinished = completedBookings?.length || 0; // Completed jobs from context
   const totalRequests = userStats?.totalBookings || 0;
   const totalAssigned = inProgressBookings?.length || 0; // Pending jobs from context
@@ -138,7 +172,7 @@ export default function Data({ userStats, isLoading }) {
   const sortedBookings = allBookings.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   const recentBookings = sortedBookings.slice(0, 3);
 
-  if (isLoading || bookingsLoading) {
+  if (isLoading || bookingsLoading || earningsLoading) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -173,7 +207,7 @@ export default function Data({ userStats, isLoading }) {
             fontWeight: "500",
           }}
         >
-          Rs. {totalEarnings.toLocaleString()}
+          {formatAmount(totalEarnings)}
         </Text>
       </View>
 
@@ -325,7 +359,7 @@ export default function Data({ userStats, isLoading }) {
                 
                 {(booking.payment || booking.amount) && (
                   <Text style={{ color: "#4ab9cf", fontSize: 13, fontWeight: "600" }}>
-                    Rs. {(booking.payment || booking.amount).toLocaleString()}
+                    {formatAmount(booking.payment || booking.amount)}
                   </Text>
                 )}
                 

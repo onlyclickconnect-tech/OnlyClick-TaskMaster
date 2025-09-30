@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -12,11 +13,15 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Text from '../../../../../components/ui/Text';
 import TransactionCard from '../../../../../components/Earnings/TransactionCard';
 import AppHeader from '../../../../../components/common/AppHeader';
+import LoadingSpinner from '../../../../../components/common/LoadingSpinner';
+import Text from '../../../../../components/ui/Text';
+import { useAuth } from '../../../../../context/AuthProvider';
+import earningsService from '../../../../../services/earnings';
 
 export default function Earnings() {
+  const { user, userData } = useAuth();
   const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
   const [search, setSearch] = useState("");
   const [selectedTx, setSelectedTx] = useState(null);
@@ -27,105 +32,137 @@ export default function Earnings() {
   const [autoPayoutEnabled, setAutoPayoutEnabled] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const filters = ['All', 'Credit', 'Debit', 'This Month'];
+  const filters = ['All', 'Credit', 'Debit'];
 
   const [data, setData] = useState({
-    availableBalance: 8700,
-    totalWithdrawn: 7000,
-    totalEarned: 11500,
-    autoPayoutAmount: 5000,
-    pendingAmount: 1200,
-    thisMonthEarnings: 2800,
+    availableBalance: 0,
+    totalWithdrawn: 0,
+    totalEarned: 0,
+    autoPayoutAmount: 0,
+    pendingAmount: 0,
     bankDetails: {
-      bankName: "HDFC Bank",
-      accountNumber: "****5678",
-      ifsc: "HDFC0001234"
+      bankName: "",
+      accountNumber: "",
+      ifsc: ""
     },
-    transactions: [
-      {
-        month: "December",
-        year: 2024,
-        total: 6500,
-        entries: [
-          {
-            id: 1,
-            name: "Rahul Sharma",
-            image: "https://picsum.photos/200/300?random=1",
-            service: "AC Repair & Service",
-            date: "15 Dec, 2024",
-            amount: 850,
-            type: "credit",
-            status: "completed",
-            customerRating: 4.8,
-            transactionId: "TXN123456789"
-          },
-          {
-            id: 2,
-            name: "Bank Transfer",
-            image: "https://picsum.photos/200/300?random=2",
-            service: "Withdrawal to HDFC Bank",
-            date: "14 Dec, 2024",
-            amount: 2000,
-            type: "debit",
-            status: "processed",
-            transactionId: "WTH987654321"
-          },
-          {
-            id: 3,
-            name: "Priya Gupta",
-            image: "https://picsum.photos/200/300?random=3",
-            service: "Plumbing Service",
-            date: "12 Dec, 2024",
-            amount: 650,
-            type: "credit",
-            status: "completed",
-            customerRating: 5.0,
-            transactionId: "TXN456789123"
-          },
-        ],
-      },
-      {
-        month: "November",
-        year: 2024,
-        total: 5200,
-        entries: [
-          {
-            id: 4,
-            name: "Amit Kumar",
-            image: "https://picsum.photos/200/300?random=4",
-            service: "Electrical Work",
-            date: "28 Nov, 2024",
-            amount: 1200,
-            type: "credit",
-            status: "completed",
-            customerRating: 4.5,
-            transactionId: "TXN789123456"
-          },
-          {
-            id: 5,
-            name: "Sneha Reddy",
-            image: "https://picsum.photos/200/300?random=5",
-            service: "Home Cleaning",
-            date: "25 Nov, 2024",
-            amount: 400,
-            type: "credit",
-            status: "completed",
-            customerRating: 4.9,
-            transactionId: "TXN321654987"
-          }
-        ],
-      },
-    ],
+    transactions: []
   });
+
+    const formatTransactionsForDisplay = (transactions) => {
+    // Group transactions by month and year
+    const grouped = transactions.reduce((acc, transaction) => {
+      // Parse the PostgreSQL timestamp format more reliably
+      let date;
+      try {
+        // Handle PostgreSQL timestamp format: "2025-09-30 10:02:47.472158+00"
+        const timestampStr = transaction.created_at;
+        if (timestampStr && typeof timestampStr === 'string') {
+          // Replace space with 'T' and remove timezone offset for ISO format
+          const isoString = timestampStr.replace(' ', 'T').replace(/\+.*$/, 'Z');
+          date = new Date(isoString);
+          
+          // If that doesn't work, try direct parsing
+          if (isNaN(date.getTime())) {
+            date = new Date(timestampStr);
+          }
+          
+          // If still invalid, use current date as fallback
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date format:', timestampStr);
+            date = new Date();
+          }
+        } else {
+          date = new Date();
+        }
+      } catch (error) {
+        console.error('Error parsing date:', transaction.created_at, error);
+        date = new Date();
+      }
+      
+      const month = date.toLocaleString('default', { month: 'long' });
+      const year = date.getFullYear();
+      const key = `${month}-${year}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          month,
+          year,
+          total: 0,
+          entries: []
+        };
+      }
+
+      acc[key].entries.push({
+        id: transaction.idx,
+        name: transaction.type === 'credit' ? 'Payment Received' : 'Bank Transfer',
+        title: transaction.type === 'credit' ? 'Payment Received' : 'Bank Transfer',
+        image: transaction.type === 'credit' ? 
+          'https://picsum.photos/200/300?random=payment' : 
+          'https://picsum.photos/200/300?random=bank',
+        service: transaction.type === 'credit' ? 
+          'Job Payment' : 
+          `Withdrawal - ${transaction.direction || 'Bank Transfer'}`,
+        subtitle: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        remarks: transaction.remarks || null,
+        date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        amount: transaction.amount || 0,
+        type: transaction.type || 'credit',
+        status: 'completed',
+        transactionId: `${transaction.id}`,
+        remarks: transaction.remarks || 'N/A'
+      });
+
+      acc[key].total += transaction.amount || 0;
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
+  };
+
+  // Load earnings data from Supabase
+  useEffect(() => {
+    if (user?.id) {
+      loadEarningsData();
+    }
+  }, [user?.id]);
+
+  const loadEarningsData = async () => {
+    try {
+      setLoading(true);
+      
+      const [earningsSummary, transactions] = await Promise.all([
+        earningsService.getEarningsSummary(user.id),
+        earningsService.getTransactions(user.id)
+      ]);
+      
+      // Update the data with real values from Supabase
+      setData(prevData => ({
+        ...prevData,
+        availableBalance: earningsSummary.wallet,
+        totalWithdrawn: earningsSummary.withdrawn,
+        totalEarned: earningsSummary.totalEarned,
+        transactions: formatTransactionsForDisplay(transactions),
+        // Keep other fields as default for now since they're not in the current Supabase schema
+        // These can be added to the database later if needed
+      }));
+    } catch (error) {
+      console.error('Error loading earnings data:', error);
+      // Keep default values if loading fails
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Functions
   const onRefresh = () => {
     setRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
+    if (user?.id) {
+      loadEarningsData().finally(() => setRefreshing(false));
+    } else {
       setRefreshing(false);
-    }, 1000);
+    }
   };
 
   const doWithdraw = () => {
@@ -138,30 +175,50 @@ export default function Earnings() {
       Alert.alert('Insufficient Balance', 'You do not have enough balance to withdraw this amount');
       return;
     }
-    
-    setData(prev => ({
-      ...prev,
-      availableBalance: prev.availableBalance - amt,
-      totalWithdrawn: prev.totalWithdrawn + amt,
-      transactions: [{
-        ...prev.transactions[0],
-        entries: [{
-          id: Date.now(),
-          name: 'Bank Transfer',
-          image: 'https://picsum.photos/200/300?random=bank',
-          service: `Withdrawal to ${prev.bankDetails.bankName}`,
-          date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-          amount: amt,
-          type: 'debit',
-          status: 'processed',
-          transactionId: `WTH${Date.now()}`
-        }, ...prev.transactions[0].entries]
-      }, ...prev.transactions.slice(1)]
-    }));
-    
-    setWithdrawAmount('');
-    setWithdrawModalVisible(false);
-    Alert.alert('Success', `₹${amt} has been withdrawn successfully`);
+
+    // Create WhatsApp message with TaskMaster details
+    const companyPhoneNumber = '+919121377419'; // Replace with actual company WhatsApp number
+    const message = `Withdrawal Request
+
+TaskMaster ID: TM00${userData?.id || '00'}
+Name: ${userData?.name || 'N/A'}
+Phone: ${userData?.ph_no || 'N/A'}
+Email: ${userData?.email || 'N/A'}
+
+Withdrawal Amount: ${formatAmount(amt)}
+Available Balance: ${formatAmount(data.availableBalance)}
+Total Earned: ${formatAmount(data.totalEarned)}
+Total Withdrawn: ${formatAmount(data.totalWithdrawn)}
+
+Date: ${new Date().toLocaleDateString('en-IN')}
+Time: ${new Date().toLocaleTimeString('en-IN')}
+
+Please process this withdrawal request.`;
+
+    const whatsappUrl = `whatsapp://send?phone=${companyPhoneNumber}&text=${encodeURIComponent(message)}`;
+
+    // Try to open WhatsApp
+    Linking.canOpenURL(whatsappUrl).then(supported => {
+      if (supported) {
+        Linking.openURL(whatsappUrl);
+        setWithdrawAmount('');
+        setWithdrawModalVisible(false);
+        Alert.alert(
+          'Request Sent',
+          'Your withdrawal request has been sent to our team via WhatsApp. We will process it within 24 hours.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'WhatsApp Not Found',
+          'Please install WhatsApp to send withdrawal requests.',
+          [{ text: 'OK' }]
+        );
+      }
+    }).catch(err => {
+      console.error('Error opening WhatsApp:', err);
+      Alert.alert('Error', 'Unable to open WhatsApp. Please try again.');
+    });
   };
 
   const toggleAutoPayout = () => {
@@ -176,7 +233,8 @@ export default function Earnings() {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -186,12 +244,6 @@ export default function Earnings() {
       if (activeFilter === 'All') return true;
       if (activeFilter === 'Credit') return entry.type === 'credit';
       if (activeFilter === 'Debit') return entry.type === 'debit';
-      if (activeFilter === 'This Month') {
-        const entryDate = new Date(entry.date);
-        const currentDate = new Date();
-        return entryDate.getMonth() === currentDate.getMonth() && 
-               entryDate.getFullYear() === currentDate.getFullYear();
-      }
       return true;
     })
   })).filter(month => month.entries.length > 0);
@@ -225,23 +277,13 @@ export default function Earnings() {
               <Text style={styles.cardLabel}>Total Earned</Text>
               <Text style={[styles.cardAmount, { color: '#27ae60' }]}>{formatAmount(data.totalEarned)}</Text>
             </View>
-          </View>
-          
-          <View style={styles.summaryRow}>
+
             <View style={styles.summaryCard}>
               <View style={styles.cardIcon}>
                 <Ionicons name="arrow-down" size={20} color="#e74c3c" />
               </View>
               <Text style={styles.cardLabel}>Withdrawn</Text>
               <Text style={[styles.cardAmount, { color: '#e74c3c' }]}>{formatAmount(data.totalWithdrawn)}</Text>
-            </View>
-            
-            <View style={styles.summaryCard}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="time" size={20} color="#f39c12" />
-              </View>
-              <Text style={styles.cardLabel}>This Month</Text>
-              <Text style={[styles.cardAmount, { color: '#f39c12' }]}>{formatAmount(data.thisMonthEarnings)}</Text>
             </View>
           </View>
         </View>
@@ -305,19 +347,33 @@ export default function Earnings() {
         {/* Transaction List */}
         <View style={styles.transactionContainer}>
           <Text style={styles.sectionTitle}>Transaction History</Text>
-          <View style={styles.transactionListContainer}>
-            {filteredTransactions.map((monthData, idx) => (
-              <View key={idx} style={styles.transactionCardWrapper}>
-                <TransactionCard
-                  data={monthData}
-                  onItemPress={(tx) => {
-                    setSelectedTx(tx);
-                    setReceiptVisible(true);
-                  }}
-                />
-              </View>
-            ))}
-          </View>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <LoadingSpinner />
+              <Text style={styles.loadingText}>Loading transactions...</Text>
+            </View>
+          ) : (
+            <View style={styles.transactionListContainer}>
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((monthData, idx) => (
+                  <View key={idx} style={styles.transactionCardWrapper}>
+                    <TransactionCard
+                      data={monthData}
+                      onItemPress={(tx) => {
+                        setSelectedTx(tx);
+                        setReceiptVisible(true);
+                      }}
+                    />
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="receipt-outline" size={48} color="#7f8c8d" />
+                  <Text style={styles.emptyText}>No transactions found</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -447,6 +503,10 @@ export default function Earnings() {
                 <Text style={styles.receiptLabel}>Transaction ID</Text>
                 <Text style={styles.receiptValue}>{selectedTx?.transactionId}</Text>
               </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Remarks</Text>
+                <Text style={styles.receiptValue}>{selectedTx?.remarks || 'N/A'}</Text>
+              </View>
               {selectedTx?.customerRating && (
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Customer Rating</Text>
@@ -547,7 +607,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardAmount: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
@@ -888,5 +948,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
   },
 });

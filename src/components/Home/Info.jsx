@@ -6,7 +6,7 @@ import useDimension from "../../hooks/useDimensions";
 
 export default function Info({ userStats, isLoading }) {
   const { screenHeight, screenWidth } = useDimension();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [imageError, setImageError] = useState(false);
   
   const styles = StyleSheet.create({
@@ -42,13 +42,11 @@ export default function Info({ userStats, isLoading }) {
 
 
 
-  const displayName = user?.name || user?.fullName || "Taskmaster";
-  const profileImageUri = user?.profileImage || user?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(displayName) + "&background=3898b3&color=fff&size=200";
+  const displayName = userData?.name || userData?.fullName || "Taskmaster";
+  const profileImageUri = userData?.profileImage || userData?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(displayName) + "&background=3898b3&color=fff&size=200";
   const fallbackImageUri = "https://avatar.windsor.io/serviceprovider";
-  const primaryService = user?.services?.[0] || "General Services";
-  const userIdDisplay = user?.taskmasterId || user?._id?.slice(-6) || "TM001";
-  const rating = userStats?.averageRating || user?.rating || 0;
-
+  const primaryService = userData?.categories || "General Services";
+  const userIdDisplay = userData?.taskmasterId || userData?.id|| "TM001";
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -81,7 +79,7 @@ export default function Info({ userStats, isLoading }) {
           </View>
           <View style={{ flexDirection: "row" }}>
             <Text>Task Master ID: </Text>
-            <Text style={{ fontWeight: "bold", left: 10 }}>{userIdDisplay}</Text>
+            <Text style={{ fontWeight: "bold", left: 10 }}>TM00{userIdDisplay}</Text>
           </View>
           <View style={{ flexDirection: "row" }}>
             <Text>Primary Service: </Text>
