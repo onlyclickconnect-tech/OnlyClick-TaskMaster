@@ -6,11 +6,11 @@ import SignInForm from '../../../components/SignIn/SignInForm';
 import SignInFormPassword from '../../../components/SignIn/SignInFormPassword';
 import SignInHeader from '../../../components/SignIn/SignInHeader';
 import SignInIllustration from '../../../components/SignIn/SignInIllustration';
-import { useAuth } from '../../../context/AuthProvider';
 import Text from '../../../components/ui/Text';
+import { useAuth } from '../../../context/AuthProvider';
 
 export default function SignIn() {
-    const [email, setEmail] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -43,13 +43,13 @@ export default function SignIn() {
         };
     }, []);
 
-    const validateEmail = (email) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+    const validatePhoneNumber = (phone) => {
+        const phoneRegex = /^[6-9]\d{9,}$/; // Indian mobile number validation (10+ digits)
+        return phoneRegex.test(phone);
     };
 
-    const handleEmailChange = (text) => {
-        setEmail(text);
+    const handlePhoneNumberChange = (text) => {
+        setPhoneNumber(text);
         if (error) setError('');
     };
 
@@ -71,13 +71,13 @@ export default function SignIn() {
     const handlePasswordSignIn = async () => {
         if (isLoading) return; // prevent double taps
 
-        if (!email.trim()) {
-            setError('Please enter your email address');
+        if (!phoneNumber.trim()) {
+            setError('Please enter your phone number');
             return;
         }
 
-        if (!validateEmail(email)) {
-            setError('Please enter a valid email address');
+        if (!validatePhoneNumber(phoneNumber)) {
+            setError('Please enter a valid phone number (minimum 10 digits)');
             return;
         }
 
@@ -95,7 +95,7 @@ export default function SignIn() {
         setError('');
 
         try {
-            const result = await loginWithPassword(email, password);
+            const result = await loginWithPassword(phoneNumber, password);
             
             if (result.success) {
                 // Auth provider will handle the redirect based on user state
@@ -114,13 +114,13 @@ export default function SignIn() {
     const handleMagicLinkSignIn = async () => {
         if (isLoading) return; // prevent double taps
 
-        if (!email.trim()) {
-            setError('Please enter your email address');
+        if (!phoneNumber.trim()) {
+            setError('Please enter your phone number');
             return;
         }
 
-        if (!validateEmail(email)) {
-            setError('Please enter a valid email address');
+        if (!validatePhoneNumber(phoneNumber)) {
+            setError('Please enter a valid phone number (minimum 10 digits)');
             return;
         }
 
@@ -133,7 +133,7 @@ export default function SignIn() {
         setError('');
 
         try {
-            const result = await requestLinkOTP(email);
+            const result = await requestLinkOTP(phoneNumber);
             
             if (result.success) {
                 setEmailSent(true);
@@ -168,10 +168,10 @@ export default function SignIn() {
             {!isKeyboardVisible && <SignInIllustration />}
             {authMode === 'password' ? (
                 <SignInFormPassword 
-                    email={email}
+                    phoneNumber={phoneNumber}
                     password={password}
                     error={error}
-                    onEmailChange={handleEmailChange}
+                    onPhoneNumberChange={handlePhoneNumberChange}
                     onPasswordChange={handlePasswordChange}
                     onSignIn={handleSignIn}
                     isLoading={isLoading}
@@ -182,9 +182,9 @@ export default function SignIn() {
                 />
             ) : (
                 <SignInForm 
-                    email={email}
+                    phoneNumber={phoneNumber}
                     error={error}
-                    onEmailChange={handleEmailChange}
+                    onPhoneNumberChange={handlePhoneNumberChange}
                     onSignIn={handleSignIn}
                     isLoading={isLoading}
                     acceptTerms={acceptTerms}

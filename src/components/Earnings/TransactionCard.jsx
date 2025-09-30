@@ -3,6 +3,15 @@ import Text from "../ui/Text";
 import TransactionInfoBox from "./TransactionInfoBox";
 
 export default function TransactionCard({ data, onItemPress }) {
+  const formatAmount = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -10,7 +19,7 @@ export default function TransactionCard({ data, onItemPress }) {
           <Text style={styles.year}>{data.year}</Text>
           <Text style={styles.month}>{data.month}</Text>
         </View>
-        <Text style={styles.total}>₹{data.total}</Text>
+        <Text style={styles.total}>{formatAmount(data.total)}</Text>
       </View>
       <View style={styles.transactionsList}>
         {data.entries.map((transaction, index) => (

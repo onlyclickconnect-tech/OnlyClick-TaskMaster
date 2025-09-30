@@ -1,11 +1,19 @@
-import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import * as Linking from "expo-linking";
+import { router } from "expo-router";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import authService from "../services/authService";
 import supabaseAuthService from "../services/supabaseAuthService";
 import userService from "../services/userService";
 import { removeUserDetails, setUserDetails } from "../utils/storage";
 import { useAppStates } from "./AppStates";
+import { supabase } from "../data/supabaseClient";
+import api from "../app/api/api";
 
 const AuthContext = createContext();
 
@@ -23,14 +31,17 @@ export default function AuthProvider({ children }) {
   const initializeAuth = async () => {
     try {
       setIsLoading(true);
-      console.log('Initializing authentication...');
+      console.log("Initializing authentication...");
 
       // Check for existing Supabase session
       const sessionResponse = await supabaseAuthService.getSession();
-      console.log('Supabase session check:', sessionResponse.success ? 'Success' : 'Failed');
+      console.log(
+        "Supabase session check:",
+        sessionResponse.success ? "Success" : "Failed"
+      );
 
       if (sessionResponse.success && sessionResponse.session) {
-        console.log('Valid Supabase session found');
+        console.log("Valid Supabase session found");
         console.log(sessionResponse.response);
 
         setUser(sessionResponse.user);
@@ -43,22 +54,21 @@ export default function AuthProvider({ children }) {
         // Mark app as opened (not first time)
         await markAppOpened();
 
-        console.log("user Data from auth provider :", sessionResponse.userData)
-        console.log("needs profile setup:", sessionResponse.needsProfileSetup)
+        console.log("user Data from auth provider :", sessionResponse.userData);
+        console.log("needs profile setup:", sessionResponse.needsProfileSetup);
 
         // Note: Routing logic moved to index.tsx to prevent conflicts
         // The index.tsx will check userData and route appropriately
-
       } else {
-        console.log('No authenticated session found');
+        console.log("No authenticated session found");
         setIsLoggedIn(false);
       }
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      console.error("Auth initialization error:", error);
       await logout(); // Clear any invalid tokens
     } finally {
       setIsLoading(false);
-      console.log('Auth initialization complete, isLoggedIn:', isLoggedIn);
+      console.log("Auth initialization complete, isLoggedIn:", isLoggedIn);
     }
   };
 
@@ -68,20 +78,20 @@ export default function AuthProvider({ children }) {
     try {
       if (!url) return;
 
-      console.log('Handling deep link:', url);
+      console.log("Handling deep link:", url);
 
       // Check if this is an auth deep link - more permissive check
-      if (url.includes('access_token') || url.includes('refresh_token')) {
+      if (url.includes("access_token") || url.includes("refresh_token")) {
         setIsLoading(true);
 
         // Process the deep link to extract tokens and set session
         const response = await supabaseAuthService.processDeepLink(url);
 
         if (response.success) {
-          console.log('Deep link authentication successful');
+          console.log("Deep link authentication successful");
           setUser(response.user);
           setIsLoggedIn(true);
-          setUserData(response.userData)
+          setUserData(response.userData);
           setAuthToken(response.session.access_token);
           setNeedsProfileSetup(response.needsProfileSetup || false);
           await setUserDetails(response.user);
@@ -90,22 +100,25 @@ export default function AuthProvider({ children }) {
           await markAppOpened();
 
           console.log("Deep link user data:", response.userData);
-          console.log("Deep link needs profile setup:", response.needsProfileSetup);
+          console.log(
+            "Deep link needs profile setup:",
+            response.needsProfileSetup
+          );
 
           // Note: Routing logic moved to index.tsx to prevent conflicts
           // The index.tsx will check userData and route appropriately
         } else {
-          console.error('Deep link authentication failed:', response.message);
-          setError(response.message || 'Failed to authenticate');
+          console.error("Deep link authentication failed:", response.message);
+          setError(response.message || "Failed to authenticate");
         }
 
         setIsLoading(false);
       } else {
-        console.log('URL does not contain authentication tokens');
+        console.log("URL does not contain authentication tokens");
         setIsLoggedIn(false);
       }
     } catch (error) {
-      console.error('Deep link handling error:', error);
+      console.error("Deep link handling error:", error);
       setError(error.message);
       setIsLoading(false);
       // setIsLoggedIn(false);
@@ -115,16 +128,18 @@ export default function AuthProvider({ children }) {
   // Check if user profile exists and redirect if needed
   const checkUserProfile = async (userId) => {
     try {
-      const profileResponse = await supabaseAuthService.checkUserProfile(userId);
+      const profileResponse = await supabaseAuthService.checkUserProfile(
+        userId
+      );
 
       if (profileResponse.success) {
         if (!profileResponse.exists) {
           // Profile doesn't exist, redirect to profile setup
-          router.replace('/auth/profile-setup');
+          router.replace("/auth/profile-setup");
         }
       }
     } catch (error) {
-      console.error('Profile check error:', error);
+      console.error("Profile check error:", error);
     }
   };
 
@@ -134,10 +149,13 @@ export default function AuthProvider({ children }) {
       setError("");
       setIsLoading(true);
 
-      const response = await supabaseAuthService.signInWithPassword(email, password);
+      const response = await supabaseAuthService.signInWithPassword(
+        email,
+        password
+      );
 
       if (response.success) {
-        console.log('Password login successful');
+        console.log("Password login successful");
         setUser(response.user);
         setAuthToken(response.session.access_token);
         setIsLoggedIn(true);
@@ -150,9 +168,9 @@ export default function AuthProvider({ children }) {
         return { success: true };
       }
 
-      throw new Error(response.message || 'Password login failed');
+      throw new Error(response.message || "Password login failed");
     } catch (error) {
-      console.error('Password login error:', error.message);
+      console.error("Password login error:", error.message);
       setError(error.message);
       return { success: false, error: error.message };
     } finally {
@@ -176,7 +194,7 @@ export default function AuthProvider({ children }) {
         return { success: true, user: response.data.user };
       }
 
-      throw new Error(response.message || 'Login failed');
+      throw new Error(response.message || "Login failed");
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -191,7 +209,7 @@ export default function AuthProvider({ children }) {
       setError("");
       setIsLoading(true);
 
-      const response = await authService.verifyOTP(email, otp, 'login');
+      const response = await authService.verifyOTP(email, otp, "login");
 
       if (response.success) {
         setUser(response.data.user);
@@ -201,7 +219,7 @@ export default function AuthProvider({ children }) {
         return { success: true, user: response.data.user };
       }
 
-      throw new Error(response.message || 'OTP verification failed');
+      throw new Error(response.message || "OTP verification failed");
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -234,10 +252,13 @@ export default function AuthProvider({ children }) {
       setError("");
       setIsLoading(true);
 
-      const response = await supabaseAuthService.signUpWithPassword(email, password);
+      const response = await supabaseAuthService.signUpWithPassword(
+        email,
+        password
+      );
 
       if (response.success) {
-        console.log('Password registration successful');
+        console.log("Password registration successful");
         setUser(response.user);
         if (response.session) {
           setAuthToken(response.session.access_token);
@@ -252,9 +273,9 @@ export default function AuthProvider({ children }) {
         return { success: true };
       }
 
-      throw new Error(response.message || 'Registration failed');
+      throw new Error(response.message || "Registration failed");
     } catch (error) {
-      console.error('Password registration error:', error.message);
+      console.error("Password registration error:", error.message);
       setError(error.message);
       return { success: false, error: error.message };
     } finally {
@@ -275,11 +296,11 @@ export default function AuthProvider({ children }) {
         return {
           success: true,
           message: response.message,
-          requiresVerification: response.data?.requiresVerification
+          requiresVerification: response.data?.requiresVerification,
         };
       }
 
-      throw new Error(response.message || 'Registration failed');
+      throw new Error(response.message || "Registration failed");
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -294,7 +315,11 @@ export default function AuthProvider({ children }) {
       setError("");
       setIsLoading(true);
 
-      const response = await authService.verifyOTP(phoneNumber, otp, 'registration');
+      const response = await authService.verifyOTP(
+        phoneNumber,
+        otp,
+        "registration"
+      );
 
       if (response.success) {
         setUser(response.data.user);
@@ -304,7 +329,7 @@ export default function AuthProvider({ children }) {
         return { success: true, user: response.data.user };
       }
 
-      throw new Error(response.message || 'OTP verification failed');
+      throw new Error(response.message || "OTP verification failed");
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -321,19 +346,30 @@ export default function AuthProvider({ children }) {
       const payload = { ...(profileData || {}) };
       try {
         const img = payload.profileImage;
-        const looksLocal = img && (img.startsWith('file:') || img.startsWith('content:') || img.startsWith('asset:') || img.includes('/storage/'));
+        const looksLocal =
+          img &&
+          (img.startsWith("file:") ||
+            img.startsWith("content:") ||
+            img.startsWith("asset:") ||
+            img.includes("/storage/"));
         if (looksLocal) {
           const uploadRes = await userService.uploadProfileImage(img);
           if (uploadRes && uploadRes.success) {
             // some APIs return imageUrl or data.imageUrl
-            payload.profileImage = uploadRes.imageUrl || uploadRes.data?.imageUrl || payload.profileImage;
+            payload.profileImage =
+              uploadRes.imageUrl ||
+              uploadRes.data?.imageUrl ||
+              payload.profileImage;
           } else {
             // continue but surface a warning
-            console.warn('Profile image upload failed or returned unexpected shape', uploadRes);
+            console.warn(
+              "Profile image upload failed or returned unexpected shape",
+              uploadRes
+            );
           }
         }
       } catch (uploadErr) {
-        console.warn('Image upload failed', uploadErr);
+        console.warn("Image upload failed", uploadErr);
         // continue to attempt profile update with original URI
       }
 
@@ -341,7 +377,8 @@ export default function AuthProvider({ children }) {
 
       if (response.success) {
         // Normalize the returned user object which may be under different keys
-        const returnedUser = response.data?.user || response.data || response.user || null;
+        const returnedUser =
+          response.data?.user || response.data || response.user || null;
         if (returnedUser) {
           setUser(returnedUser);
           await setUserDetails(returnedUser);
@@ -349,7 +386,7 @@ export default function AuthProvider({ children }) {
         }
 
         // Fallback: if response.data looks like the user object itself
-        if (response.data && typeof response.data === 'object') {
+        if (response.data && typeof response.data === "object") {
           setUser(response.data);
           await setUserDetails(response.data);
           return { success: true, user: response.data };
@@ -359,7 +396,7 @@ export default function AuthProvider({ children }) {
         return { success: true, user: payload };
       }
 
-      throw new Error(response.message || 'Profile update failed');
+      throw new Error(response.message || "Profile update failed");
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -374,17 +411,33 @@ export default function AuthProvider({ children }) {
   // Logout
   const logout = async () => {
     try {
+      // Get current user ID
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user?.id) {
+        throw new Error("No authenticated user found");
+      }
+
+      // Send user_id as query parameter instead of body
+      const response = await api.delete(
+        `/api/v1/delete?user_id=${session.user.id}`
+      );
+
+      console.log("Backend logout response:", response.data);
+
       // Sign out from Supabase
       await supabaseAuthService.signOut();
       setUser(null);
       setIsLoggedIn(false);
       setAuthToken("");
       await removeUserDetails();
-      router.replace('/auth/sign-in')
+      router.replace("/auth/sign-in");
       // Also call legacy logout if needed
       // await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -404,7 +457,11 @@ export default function AuthProvider({ children }) {
   const resetPassword = async (phoneNumber, otp, newPassword) => {
     try {
       setError("");
-      const response = await authService.resetPassword(phoneNumber, otp, newPassword);
+      const response = await authService.resetPassword(
+        phoneNumber,
+        otp,
+        newPassword
+      );
       return { success: response.success, message: response.message };
     } catch (error) {
       setError(error.message);
@@ -417,9 +474,9 @@ export default function AuthProvider({ children }) {
     initializeAuth();
 
     // Set up deep link handler for when app is already open
-    const subscription = Linking.addEventListener('url', (event) => {
+    const subscription = Linking.addEventListener("url", (event) => {
       const url = event.url;
-      console.log('Deep link received while app is open:', url);
+      console.log("Deep link received while app is open:", url);
 
       // Force immediate processing of the deep link
       if (url) {
@@ -431,10 +488,10 @@ export default function AuthProvider({ children }) {
     });
 
     // Check for initial URL (app opened via deep link)
-    Linking.getInitialURL().then(url => {
+    Linking.getInitialURL().then((url) => {
       console.log("deep link opeaned the app.");
       if (url) {
-        console.log('App opened via deep link:', url);
+        console.log("App opened via deep link:", url);
         handleDeepLink(url);
       }
     });
@@ -444,42 +501,41 @@ export default function AuthProvider({ children }) {
     };
   }, []);
 
-  const value = useMemo(() => ({
-    user,
-    authToken,
-    isLoggedIn,
-    isLoading,
-    error,
-    login,
-    loginWithPassword,
-    registerWithPassword,
-    loginWithOTP,
-    requestLinkOTP,
-    register,
-    verifyRegistrationOTP,
-    updateProfile,
-    updateUser,
-    logout,
-    forgotPassword,
-    resetPassword,
-    setError,
-    userData,
-    setUserData,
-    needsProfileSetup,
-    setNeedsProfileSetup
-  }), [user, authToken, isLoggedIn, isLoading, error, userData, needsProfileSetup]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      authToken,
+      isLoggedIn,
+      isLoading,
+      error,
+      login,
+      loginWithPassword,
+      registerWithPassword,
+      loginWithOTP,
+      requestLinkOTP,
+      register,
+      verifyRegistrationOTP,
+      updateProfile,
+      updateUser,
+      logout,
+      forgotPassword,
+      resetPassword,
+      setError,
+      userData,
+      setUserData,
+      needsProfileSetup,
+      setNeedsProfileSetup,
+    }),
+    [user, authToken, isLoggedIn, isLoading, error, userData, needsProfileSetup]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

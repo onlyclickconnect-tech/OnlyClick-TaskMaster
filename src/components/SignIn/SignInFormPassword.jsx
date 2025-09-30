@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Text from '../ui/Text';
 const SignInFormPassword = ({ 
-  email, 
+  phoneNumber, 
   password, 
   error, 
-  onEmailChange, 
+  onPhoneNumberChange, 
   onPasswordChange, 
   onSignIn, 
   isLoading, 
@@ -157,24 +157,24 @@ For questions about this privacy policy, please contact us through the app.`
       
       <Text style={styles.title}>Login to your account</Text>
       
-      {/* Email Input */}
+      {/* Phone Number Input */}
       <View style={styles.inputContainer}>
         <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
           <Ionicons
-            name="mail-outline"
+            name="call-outline"
             size={20}
             color="#666"
             style={styles.inputIcon}
           />
           <TextInput
             style={styles.textInput}
-            placeholder="Enter your email"
+            placeholder="Enter your phone number"
             placeholderTextColor="#999"
-            keyboardType="email-address"
+            keyboardType="phone-pad"
             autoCapitalize="none"
             autoCorrect={false}
-            value={email}
-            onChangeText={onEmailChange}
+            value={phoneNumber}
+            onChangeText={onPhoneNumberChange}
             editable={!isLoading}
           />
         </View>

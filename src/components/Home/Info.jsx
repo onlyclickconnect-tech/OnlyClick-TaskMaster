@@ -8,7 +8,7 @@ import Text from "../ui/Text";
 export default function Info({ userStats, isLoading }) {
   const { screenHeight, screenWidth } = useDimension();
   const { user, userData } = useAuth();
-  const { completedBookings, inProgressBookings, loading: bookingsLoading } = useBookings();
+
   const [imageError, setImageError] = useState(false);
   
   const styles = StyleSheet.create({
@@ -52,28 +52,14 @@ export default function Info({ userStats, isLoading }) {
     }
   });
 
-  // Use userData from taskmaster table (more complete data)
-  const displayName = userData?.name || user?.name || user?.fullName || "TaskMaster";
-  const displayPhone = userData?.ph_no || user?.phone || "Not provided";
-  const displayCategory = userData?.category || user?.category || "General Services";
-  const displayEmail = user?.email || "Not provided";
-  const displayLocation = userData?.city || userData?.location || "Not specified";
-  const displayTmId = userData?.tm_id || user?.id || "TM001";
-  
-  // Profile image from userData or fallback
-  const profileImageUri = userData?.tm_profilepic || userData?.profileImage || 
-    user?.profileImage || user?.avatar || 
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3898b3&color=fff&size=200`;
-  const fallbackImageUri = "https://avatar.windsor.io/serviceprovider";
-  
-  
-  const totalCompletedJobs = completedBookings?.length || 0; // Real completed jobs count
-  const totalInProgressJobs = inProgressBookings?.length || 0; // Real in-progress jobs count
-  const totalJobs = totalCompletedJobs + totalInProgressJobs; // Total all jobs
-  const completionRate = totalJobs > 0 ? Math.round((totalCompletedJobs / totalJobs) * 100) : 100; // Real completion rate
-  
 
-  if (isLoading || !userData || bookingsLoading) {
+  const displayName = userData?.name || userData?.fullName || "Taskmaster";
+  const profileImageUri = userData?.profileImage || userData?.avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(displayName) + "&background=3898b3&color=fff&size=200";
+  const fallbackImageUri = "https://avatar.windsor.io/serviceprovider";
+  const primaryService = userData?.categories || "General Services";
+  const userIdDisplay = userData?.taskmasterId || userData?.id|| "TM001";
+  if (isLoading) {
+
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -122,12 +108,11 @@ export default function Info({ userStats, isLoading }) {
               </Text>
             </View>
           </View>
-          
-          <View style={{ flexDirection: "row", marginBottom: 3 }}>
-            <Text style={{ fontSize: 12, color: "#666" }}>Category: </Text>
-            <Text style={{ fontSize: 12, fontWeight: "bold", color: "#3898b3" }}>
-              {displayCategory}
-            </Text>
+
+          <View style={{ flexDirection: "row" }}>
+            <Text>Task Master ID: </Text>
+            <Text style={{ fontWeight: "bold", left: 10 }}>TM00{userIdDisplay}</Text>
+
           </View>
           
           <View style={{ flexDirection: "row", marginBottom: 3 }}>
