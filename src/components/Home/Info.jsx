@@ -58,12 +58,39 @@ export default function Info({ userStats, isLoading }) {
   const primaryService = userData?.categories || "General Services";
   const userIdDisplay = userData?.taskmasterId || userData?.id|| "TM001";
   
-  // Define missing variables
+  // Define missing variables with better fallbacks
   const displayPhone = userData?.phoneNumber || userData?.ph_no || "+91 XXXXXXXXXX";
   const displayEmail = userData?.email || user?.email || "email@example.com";
-  const totalCompletedJobs = userStats?.completedBookings || userStats?.totalCompletedJobs || 0;
-  const totalInProgressJobs = userStats?.pendingBookings || userStats?.totalInProgressJobs || 0;
-  const completionRate = totalCompletedJobs > 0 ? Math.round((totalCompletedJobs / (totalCompletedJobs + totalInProgressJobs)) * 100) : 0;
+  
+  // Fix the data extraction for job counts
+  const totalCompletedJobs = userStats?.completedBookings?.length || 
+                            userStats?.totalCompletedJobs || 
+                            userStats?.completed || 
+                            0;
+                            
+  const totalInProgressJobs = userStats?.inProgressBookings?.length || 
+                             userStats?.pendingBookings?.length ||
+                             userStats?.totalInProgressJobs || 
+                             userStats?.inProgress || 
+                             userStats?.pending ||
+                             0;
+                             
+  const totalAvailableJobs = userStats?.availableBookings?.length || 
+                            userStats?.available || 
+                            0;
+  
+  // Fix completion rate calculation
+  const totalJobsWorkedOn = totalCompletedJobs + totalInProgressJobs;
+  const completionRate = totalJobsWorkedOn > 0 ? 
+    Math.round((totalCompletedJobs / totalJobsWorkedOn) * 100) : 0;
+
+  console.log('Info component - userStats:', userStats);
+  console.log('Info component - job counts:', {
+    completed: totalCompletedJobs,
+    inProgress: totalInProgressJobs,
+    available: totalAvailableJobs,
+    completionRate
+  });
   if (isLoading) {
 
     return (

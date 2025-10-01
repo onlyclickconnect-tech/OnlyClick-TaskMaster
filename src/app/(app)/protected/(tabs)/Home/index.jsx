@@ -1,17 +1,37 @@
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import Data from "../../../../../components/Home/Data";
 import Header from "../../../../../components/Home/Header";
 import Info from "../../../../../components/Home/Info";
 import { useAuth } from "../../../../../context/AuthProvider";
-import { useRouter } from "expo-router";
+import { useBookings } from "../../../../../context/bookingsContext";
+import api from "../../../../api/api";
 export default function Home() {
   const router = useRouter()
   const { user, isLoggedIn, userData, authToken } = useAuth();
-  const [userStats, setUserStats] = useState(null);
+  
+  // Use bookings context for real data
+  const { 
+    inProgressBookings, 
+    completedBookings, 
+    refreshAllBookings, 
+    loading: bookingsLoading 
+  } = useBookings();
+
+  const [availableBookings, setAvailableBookings] = useState([]);
   const [recentBookings, setRecentBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Create userStats from bookings context
+  const userStats = {
+    totalBookings: (inProgressBookings?.length || 0) + (completedBookings?.length || 0),
+    completedBookings: completedBookings || [],
+    inProgressBookings: inProgressBookings || [],
+    availableBookings: availableBookings || [],
+    pendingBookings: inProgressBookings || [], // alias for consistency
+  };
 
 
   useEffect(() => {
@@ -25,28 +45,36 @@ export default function Home() {
   }, [userData])
 
 
+  // Fetch available bookings (not in bookings context)
+  const fetchAvailableBookings = async () => {
+    try {
+      const { data, errors } = await api.post('api/v1/getJobsAvailable');
+      if (errors) throw errors;
+      const available = data?.data || [];
+      setAvailableBookings(available);
+      return available;
+    } catch (error) {
+      console.error('Error fetching available bookings:', error);
+      return [];
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
-      // // Dummy data for user stats
-      // const dummyStats = {
-      //   totalBookings: 10,
-      //   completedBookings: 8,
-      //   pendingBookings: 2,
-      // };
-
-      // // Dummy data for recent bookings
-      // const dummyBookings = [
-      //   { id: 1, service: "Plumbing", date: "2025-08-15" },
-      //   { id: 2, service: "Electrical", date: "2025-08-14" },
-      //   { id: 3, service: "Cleaning", date: "2025-08-13" },
-      //   { id: 4, service: "Painting", date: "2025-08-12" },
-      //   { id: 5, service: "Carpentry", date: "2025-08-11" },
-      // ];
-
-      // // Simulate API response
-      // setUserStats(dummyStats);
-      // setRecentBookings(dummyBookings);
+      setIsLoading(true);
+      // Fetch available bookings
+      await fetchAvailableBookings();
       
+      // Set recent bookings from completed bookings (last 5)
+      const recent = (completedBookings || [])
+        .slice(0, 5)
+        .map(booking => ({
+          id: booking._id || booking.id,
+          service: booking.serviceName || booking.service,
+          date: booking.completedAt || booking.updatedAt || booking.createdAt
+        }));
+      
+      setRecentBookings(recent);
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -57,13 +85,26 @@ export default function Home() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchDashboardData();
-    setRefreshing(false);
+    try {
+      await Promise.all([
+        refreshAllBookings(), // Refresh in-progress and completed bookings
+        fetchAvailableBookings() // Refresh available bookings
+      ]);
+      await fetchDashboardData(); // Update recent bookings
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    // Only fetch dashboard data when component mounts or when bookings data changes
+    // Wait for bookings to load first to avoid race conditions
+    if (!bookingsLoading) {
+      fetchDashboardData();
+    }
+  }, [completedBookings?.length, inProgressBookings?.length, bookingsLoading]); // Use length to avoid deep comparison
 
   return (
     <ScrollView

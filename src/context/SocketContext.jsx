@@ -20,7 +20,15 @@ const SocketProvider = ({ children }) => {
     }
   }, [isLoggedIn]);
 
- 
+  // Dummy socket methods
+  const emitEvent = (event, data) => {
+  };
+
+  const onEvent = (event, callback) => {
+  };
+
+  const offEvent = (event, callback) => {
+  };
 
   return (
     <SocketContext.Provider 

@@ -29,7 +29,7 @@ export default function JobBox({ data, isPending, isCompleted, onEnterOtp, onPre
     <>
       {/* Customer Image */}
       <Image
-        source={{ uri: data.image || 'https://picsum.photos/200' }}
+        source={data.image ? { uri: data.image } : require('../../../assets/images/avatarPlaceholder.png')}
         style={styles.customerImage}
       />
       

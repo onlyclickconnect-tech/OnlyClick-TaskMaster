@@ -347,6 +347,55 @@ export default function Index() {
   const handleComplete = async (svc) => {
     
     try {
+      // For grouped jobs, process them sequentially to prevent race conditions
+      if (svc.jobs && svc.jobs.length > 1) {
+        console.log('Processing grouped jobs sequentially to prevent race conditions');
+        
+        // Show loading overlay for grouped jobs processing
+        setAcceptingJob(true);
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        // Process jobs one by one with delays
+        for (let i = 0; i < svc.jobs.length; i++) {
+          const job = svc.jobs[i];
+          try {
+            const requestPayload = {
+              _id: job._id || job.id,
+              otp: svc.otp // Assuming OTP is passed in service object
+            };
+            
+            console.log(`Processing job ${i + 1}/${svc.jobs.length}:`, requestPayload);
+            const response = await api.post('api/v1/verifyJobComplete', requestPayload);
+            
+            if (response?.data?.success) {
+              successCount++;
+              console.log(`Job ${i + 1} completed successfully`);
+            } else {
+              failCount++;
+              console.log(`Job ${i + 1} failed to complete`);
+            }
+            
+            // Add delay between requests to prevent race conditions (except for last item)
+            if (i < svc.jobs.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+            }
+          } catch (error) {
+            failCount++;
+            console.error(`Failed to complete job ${i + 1}:`, error);
+            
+            // Continue with next job even if one fails
+            if (i < svc.jobs.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          }
+        }
+        
+        setAcceptingJob(false); // Hide loading overlay
+        console.log(`Grouped job processing complete: ${successCount} successful, ${failCount} failed`);
+      }
+
       // Refresh all jobs to get updated status from server
       await refreshAllJobs();
       setServiceModalVisible(false);
@@ -369,6 +418,8 @@ export default function Index() {
         });
       }, 300);
     } catch (error) {
+      console.error('Error in handleComplete:', error);
+      setAcceptingJob(false); // Make sure to hide loading overlay on error
       // Still show success message even if refresh fails
       setServiceModalVisible(false);
       setTimeout(() => {
@@ -726,9 +777,13 @@ export default function Index() {
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#4ab9cf" />
-            <Text style={styles.loadingTitle}>Processing Job Acceptance</Text>
+            <Text style={styles.loadingTitle}>
+              {selectedService?.jobs?.length > 1 ? 'Processing Multiple Jobs' : 'Processing Job'}
+            </Text>
             <Text style={styles.loadingMessage}>
-              Please wait while we process your request...
+              {selectedService?.jobs?.length > 1 
+                ? `Please wait while we process all ${selectedService.jobs.length} jobs sequentially...` 
+                : 'Please wait while we process your request...'}
             </Text>
           </View>
         </View>
