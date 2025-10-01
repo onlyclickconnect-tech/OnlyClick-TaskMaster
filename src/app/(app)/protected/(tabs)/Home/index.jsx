@@ -61,6 +61,7 @@ export default function Home() {
 
   const fetchDashboardData = async () => {
     try {
+      setIsLoading(true);
       // Fetch available bookings
       await fetchAvailableBookings();
       
@@ -98,13 +99,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [completedBookings, inProgressBookings, availableBookings]); // Re-run when bookings data changes
-
-  // Update loading state based on bookings loading
-  useEffect(() => {
-    setIsLoading(bookingsLoading);
-  }, [bookingsLoading]);
+    // Only fetch dashboard data when component mounts or when bookings data changes
+    // Wait for bookings to load first to avoid race conditions
+    if (!bookingsLoading) {
+      fetchDashboardData();
+    }
+  }, [completedBookings?.length, inProgressBookings?.length, bookingsLoading]); // Use length to avoid deep comparison
 
   return (
     <ScrollView

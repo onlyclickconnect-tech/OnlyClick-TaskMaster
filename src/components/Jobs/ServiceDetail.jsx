@@ -662,16 +662,14 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
             )}
             
             <View style={styles.topRow}>
-              <Image source={{ uri: service.image || 'https://picsum.photos/200' }} style={styles.image} />
+              <Image source={service.image ? { uri: service.image } : require('../../../assets/images/avatarPlaceholder.png')} style={styles.image} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.name}>{service.customerName}</Text>
                 <Text style={styles.address}>{service.address}</Text>
                 {isGroupedJob && service.timeSlot && service.timeSlot !== 'any-time' && (
                   <Text style={styles.info}>Time Slot: {formatTimeSlot(service.timeSlot)}</Text>
                 )}
-                <Text style={styles.info}>
-                  {isGroupedJob ? `Group ID: ${service._id}` : `Booking ID: ${service._id || '—'}`}
-                </Text>
+                
               </View>
               <TouchableOpacity style={styles.callBtn} onPress={callCustomer}>
                 <Ionicons name="call" size={18} color="#fff" />
