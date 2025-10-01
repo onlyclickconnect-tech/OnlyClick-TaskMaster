@@ -349,7 +349,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       
       if (isGroupedJob && service.jobs) {
         // Handle grouped jobs - submit OTP for each job sequentially
-        console.log('Processing grouped jobs sequentially for OTP verification');
         
         for (let i = 0; i < service.jobs.length; i++) {
           const job = service.jobs[i];
@@ -359,7 +358,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
               otp: otp
             };
             
-            console.log(`Verifying OTP for job ${i + 1}/${service.jobs.length}:`, requestPayload);
             
             // Update processing message to show progress
             showCustomAlert({
@@ -376,11 +374,9 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
             if (response?.data?.success) {
               successCount++;
               results.push({ status: 'fulfilled', value: response, reason: null });
-              console.log(`Job ${i + 1} OTP verified successfully`);
             } else {
               failCount++;
               results.push({ status: 'rejected', value: null, reason: 'Verification failed' });
-              console.log(`Job ${i + 1} OTP verification failed`);
             }
             
             // Add delay between requests to prevent race conditions (except for last item)
@@ -400,7 +396,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
           }
         }
         
-        console.log(`Grouped OTP verification complete: ${successCount} successful, ${failCount} failed`);
         
       } else {
         // Handle single job
@@ -409,9 +404,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
           otp: otp  // OTP entered by user
         };
         
-        console.log('=== MAKING API CALL ===');
-        console.log('API URL: api/v1/verifyJobComplete');
-        console.log('Request payload:', requestPayload);
         
         const response = await api.post('api/v1/verifyJobComplete', requestPayload);
         
@@ -434,7 +426,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       const failed = failCount;
       const jobCount = isGroupedJob ? service.jobs.length : 1;
       
-      console.log(`OTP verification completed: ${successful} successful, ${failed} failed`);
       
       if (successful > 0) {
         setOtp(''); // Clear OTP input

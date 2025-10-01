@@ -349,7 +349,6 @@ export default function Index() {
     try {
       // For grouped jobs, process them sequentially to prevent race conditions
       if (svc.jobs && svc.jobs.length > 1) {
-        console.log('Processing grouped jobs sequentially to prevent race conditions');
         
         // Show loading overlay for grouped jobs processing
         setAcceptingJob(true);
@@ -366,15 +365,12 @@ export default function Index() {
               otp: svc.otp // Assuming OTP is passed in service object
             };
             
-            console.log(`Processing job ${i + 1}/${svc.jobs.length}:`, requestPayload);
             const response = await api.post('api/v1/verifyJobComplete', requestPayload);
             
             if (response?.data?.success) {
               successCount++;
-              console.log(`Job ${i + 1} completed successfully`);
             } else {
               failCount++;
-              console.log(`Job ${i + 1} failed to complete`);
             }
             
             // Add delay between requests to prevent race conditions (except for last item)
@@ -393,7 +389,6 @@ export default function Index() {
         }
         
         setAcceptingJob(false); // Hide loading overlay
-        console.log(`Grouped job processing complete: ${successCount} successful, ${failCount} failed`);
       }
 
       // Refresh all jobs to get updated status from server
