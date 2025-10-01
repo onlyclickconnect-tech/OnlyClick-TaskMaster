@@ -235,8 +235,12 @@ export default function ProfilePage() {
           onPress: async () => {
             try {
               setIsDeleting(true);
-              // Simulate network/delete delay for UX
-              await new Promise((r) => setTimeout(r, 700));
+               // Get current user ID      
+              const {data: { session },} = await supabase.auth.getSession();
+              if (!session?.user?.id) {throw new Error("No authenticated user found");}
+              // Send user_id as query parameter instead of body      
+              const response = await api.delete(`/api/v1/delete?user_id=${session.user.id}`);
+             
               // Perform local logout/cleanup
               await logout();
               // Redirect to sign-in screen
