@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import Data from "../../../../../components/Home/Data";
@@ -5,7 +6,6 @@ import Header from "../../../../../components/Home/Header";
 import Info from "../../../../../components/Home/Info";
 import { useAuth } from "../../../../../context/AuthProvider";
 import { useBookings } from "../../../../../context/bookingsContext";
-import { useRouter } from "expo-router";
 import api from "../../../../api/api";
 export default function Home() {
   const router = useRouter()
