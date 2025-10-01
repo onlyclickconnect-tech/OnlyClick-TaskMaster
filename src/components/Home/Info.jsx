@@ -84,13 +84,7 @@ export default function Info({ userStats, isLoading }) {
   const completionRate = totalJobsWorkedOn > 0 ? 
     Math.round((totalCompletedJobs / totalJobsWorkedOn) * 100) : 0;
 
-  console.log('Info component - userStats:', userStats);
-  console.log('Info component - job counts:', {
-    completed: totalCompletedJobs,
-    inProgress: totalInProgressJobs,
-    available: totalAvailableJobs,
-    completionRate
-  });
+
   if (isLoading) {
 
     return (
