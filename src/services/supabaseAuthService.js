@@ -7,7 +7,6 @@ class SupabaseAuthService {
   // Sign in with email and password
   async signInWithPassword(ph_no, password) {
     try {
-      console.log('Signing in with email and password...');
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: `${ph_no}@taskmaster.com`,
@@ -20,7 +19,6 @@ class SupabaseAuthService {
         throw new Error('No session or user returned from authentication');
       }
 
-      console.log('Password sign in successful');
 
       // Get user data from taskmaster table
       const { data: userData, error: userDataError } = await supabase
@@ -31,7 +29,6 @@ class SupabaseAuthService {
         .single();
 
       if (userDataError && userDataError.code !== 'PGRST116') {
-        console.log('Error fetching user data:', userDataError);
       }
 
       // Determine if user needs profile setup
@@ -40,8 +37,6 @@ class SupabaseAuthService {
         needsProfileSetup = true;
       }
 
-      console.log('User data from password sign in:', userData ? 'Found' : 'Not found');
-      console.log('Needs profile setup:', needsProfileSetup);
 
       return {
         success: true,
@@ -64,7 +59,6 @@ class SupabaseAuthService {
   // Register with email and password
   async signUpWithPassword(email, password) {
     try {
-      console.log('Signing up with email and password...');
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -77,7 +71,6 @@ class SupabaseAuthService {
         throw new Error('No user returned from registration');
       }
 
-      console.log('Password sign up successful');
 
       return {
         success: true,
@@ -112,7 +105,6 @@ class SupabaseAuthService {
         throw new Error(response.error || 'Failed to send magic link');
       }
 
-      console.log("Link sent successfully:", response.data.message);
 
       return {
         success: true,
@@ -133,12 +125,10 @@ class SupabaseAuthService {
   // Process deep link and extract tokens
   async processDeepLink(url) {
     try {
-      console.log('Processing deep link:', url);
 
       // Extract the access_token and refresh_token from the URL
       const extractTokenInfo = (url) => {
         if (url.includes("access_token") || url.includes("refresh_token")) {
-          console.log("Processing magic link:", url);
 
           try {
             // Extract tokens from URL
@@ -149,8 +139,6 @@ class SupabaseAuthService {
               const access_token = decodeURIComponent(accessTokenMatch[1]);
               const refresh_token = decodeURIComponent(refreshTokenMatch[1]);
 
-              console.log("Access token from supaAuthService: ", access_token)
-              console.log("Refresh token from supaAuthService: ", refresh_token)
 
               return { access_token, refresh_token };
             }
@@ -169,7 +157,6 @@ class SupabaseAuthService {
       }
 
       // Set the session with the extracted tokens
-      console.log('Setting Supabase session with tokens');
       const { data, error } = await supabase.auth.setSession({
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
@@ -178,14 +165,12 @@ class SupabaseAuthService {
       if (error) throw error;
 
 
-      console.log({ access_token: tokens.access_token })
       
       // Try to get user data from taskmaster table
       const { error: callbackError, isNewUser } = await api.post('/api/v1/tmcallback', { access_token: tokens.access_token })
 
       if (callbackError) throw callbackError
 
-      console.log("is new user ??? ", isNewUser)
 
 
       const { data: userData, error: userDataError } = await supabase
@@ -197,14 +182,11 @@ class SupabaseAuthService {
 
 
       if (userDataError) {
-        console.log('Supabase user check error (processDeepLink): ', userDataError.message);
         throw userDataError;
       }
 
 
-      console.log("userData from processDeepLink:", JSON.stringify(userData, null, 2));
 
-      console.log('Session set successfully, user authenticated');
       return {
         success: true,
         session: data.session,
@@ -225,7 +207,6 @@ class SupabaseAuthService {
   // Get current session
   async getSession() {
     try {
-      console.log('Fetching Supabase session...');
       const { data, error } = await supabase.auth.getSession();
 
       if (error) {
@@ -258,14 +239,8 @@ class SupabaseAuthService {
         needsProfileSetup = false
       }
 
-      console.log("User Data from tm - name:", userData?.name, "ph_no:", userData?.ph_no);
 
-      // Log session details for debugging
-      console.log('Session data:', {
-        hasSession: !!data.session,
-        hasUser: !!data.session?.user,
-        expiresAt: data.session?.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : 'N/A'
-      });
+
 
       return {
         success: true,
@@ -294,7 +269,6 @@ class SupabaseAuthService {
         .eq('tm_id', userId)
         .single();
 
-      console.log("user profile find: ", data);
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
         throw error;
@@ -302,7 +276,6 @@ class SupabaseAuthService {
 
       // Check if profile exists and has a name (since column is named 'name' not 'tm_name')
       const hasProfile = data && data.name;
-      console.log('Profile exists:', !!hasProfile);
 
       return {
         success: true,
@@ -327,7 +300,6 @@ class SupabaseAuthService {
 
       if (error) throw error;
 
-      console.log(data);
 
       return {
         success: true,

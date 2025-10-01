@@ -61,7 +61,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
         
         return `${displayHour}:${minutes} ${ampm} • ${dateStr}`;
       } catch (e) {
-        console.log('Error parsing timestamp:', e);
         return timeSlot;
       }
     }
@@ -128,11 +127,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
     processing: false
   });
 
-  console.log('=== ServiceDetail rendered ===');
-  console.log('visible:', visible);
-  console.log('mode:', mode);
-  console.log('service:', service);
-  console.log('onComplete exists:', !!onComplete);
 
   // Helper function to show custom alert
   const showCustomAlert = (config) => {
@@ -295,12 +289,8 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
   };
 
   const acceptJob = () => {
-    console.log("=== ServiceDetail acceptJob called ===");
-    console.log("onAccept exists?", !!onAccept);
-    console.log("service:", service);
     
     if (onAccept) {
-      console.log("Calling onAccept with service...");
       onAccept(service);
       // Don't call close() here - let the parent component handle modal closing
     } else {
@@ -338,10 +328,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       });
     }
     
-    console.log('=== SUBMIT OTP CALLED ===');
-    console.log('OTP entered:', otp);
-    console.log('Service data before API call:', service);
-    console.log('Is grouped job:', isGroupedJob);
     
     // Show processing alert
     const jobCount = isGroupedJob ? service.jobs.length : 1;
@@ -361,18 +347,15 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       
       if (isGroupedJob && service.jobs) {
         // Handle grouped jobs - submit OTP for each job
-        console.log('Processing grouped jobs:', service.jobs.length);
         const otpPromises = service.jobs.map(job => {
           const requestPayload = {
             _id: job._id || job.id,
             otp: otp
           };
-          console.log('Submitting OTP for job:', requestPayload);
           return api.post('api/v1/verifyJobComplete', requestPayload);
         });
         
         results = await Promise.allSettled(otpPromises);
-        console.log('Grouped OTP results:', results);
       } else {
         // Handle single job
         const requestPayload = {
@@ -380,9 +363,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
           otp: otp  // OTP entered by user
         };
         
-        console.log('=== MAKING API CALL ===');
-        console.log('API URL: api/v1/verifyJobComplete');
-        console.log('Request payload:', requestPayload);
         
         const response = await api.post('api/v1/verifyJobComplete', requestPayload);
         results = [{ status: 'fulfilled', value: response, reason: null }];
@@ -398,7 +378,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       
       const failed = jobCount - successful;
       
-      console.log(`OTP verification completed: ${successful} successful, ${failed} failed`);
       
       if (successful > 0) {
         setOtp(''); // Clear OTP input
@@ -419,7 +398,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
             {
               text: 'Great!',
               onPress: () => {
-                console.log('Job(s) completed successfully, calling onComplete and closing modal');
                 hideCustomAlert();
                 if (onComplete) onComplete(service);
                 close();
@@ -448,7 +426,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       }
       
     } catch (err) {
-      console.log('=== API ERROR CAUGHT ===');
       console.error('API Error:', err);
       setSubmitting(false);
       hideCustomAlert();
@@ -458,8 +435,6 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
         const status = err.response.status;
         const errorData = err.response.data;
         
-        console.log('Error status:', status);
-        console.log('Error data:', errorData);
         
         switch (status) {
           case 400:

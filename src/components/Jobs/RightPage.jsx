@@ -146,12 +146,10 @@ export default function RightPage() {
     ],
   ]);
   const pendingData = data.get("Completed");
-  //   console.log(pendingData);
   let arrayData = [];
   Array.from(pendingData, (data) => {
     arrayData = [...arrayData, data];
   });
-  //   console.log(arrayData);
   const { screenHeight, screenWidth } = useDimension();
   return (
     <View style={{ flex: 1, paddingHorizontal: 50 }}>

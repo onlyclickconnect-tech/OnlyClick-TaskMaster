@@ -121,7 +121,6 @@ export default function WorkHistory() {
   };
 
   const renderItem = ({ item, index }) => {
-    console.log('Rendering item:', item);
     const isRecent = index === 0;
     const isCompleted = completedBookings.some(job => job._id === item._id);
     const statusColor = isCompleted ? '#4CAF50' : '#f1c40f';

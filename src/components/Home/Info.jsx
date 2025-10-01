@@ -92,7 +92,6 @@ export default function Info({ userStats, isLoading }) {
               borderColor: "#3898b3" 
             }}
             onError={() => {
-              console.log('Failed to load profile image, using fallback');
               setImageError(true);
             }}
           />

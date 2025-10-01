@@ -31,18 +31,12 @@ export default function AuthProvider({ children }) {
   const initializeAuth = async () => {
     try {
       setIsLoading(true);
-      console.log("Initializing authentication...");
 
       // Check for existing Supabase session
       const sessionResponse = await supabaseAuthService.getSession();
-      console.log(
-        "Supabase session check:",
-        sessionResponse.success ? "Success" : "Failed"
-      );
+     
 
       if (sessionResponse.success && sessionResponse.session) {
-        console.log("Valid Supabase session found");
-        console.log(sessionResponse.response);
 
         setUser(sessionResponse.user);
         setUserData(sessionResponse.userData);
@@ -54,13 +48,10 @@ export default function AuthProvider({ children }) {
         // Mark app as opened (not first time)
         await markAppOpened();
 
-        console.log("user Data from auth provider :", sessionResponse.userData);
-        console.log("needs profile setup:", sessionResponse.needsProfileSetup);
 
         // Note: Routing logic moved to index.tsx to prevent conflicts
         // The index.tsx will check userData and route appropriately
       } else {
-        console.log("No authenticated session found");
         setIsLoggedIn(false);
       }
     } catch (error) {
@@ -68,17 +59,14 @@ export default function AuthProvider({ children }) {
       await logout(); // Clear any invalid tokens
     } finally {
       setIsLoading(false);
-      console.log("Auth initialization complete, isLoggedIn:", isLoggedIn);
     }
   };
 
   // Handle deep links
   const handleDeepLink = async (url) => {
-    console.log(url);
     try {
       if (!url) return;
 
-      console.log("Handling deep link:", url);
 
       // Check if this is an auth deep link - more permissive check
       if (url.includes("access_token") || url.includes("refresh_token")) {
@@ -88,7 +76,6 @@ export default function AuthProvider({ children }) {
         const response = await supabaseAuthService.processDeepLink(url);
 
         if (response.success) {
-          console.log("Deep link authentication successful");
           setUser(response.user);
           setIsLoggedIn(true);
           setUserData(response.userData);
@@ -99,11 +86,7 @@ export default function AuthProvider({ children }) {
           // Mark app as opened (not first time)
           await markAppOpened();
 
-          console.log("Deep link user data:", response.userData);
-          console.log(
-            "Deep link needs profile setup:",
-            response.needsProfileSetup
-          );
+       
 
           // Note: Routing logic moved to index.tsx to prevent conflicts
           // The index.tsx will check userData and route appropriately
@@ -114,7 +97,6 @@ export default function AuthProvider({ children }) {
 
         setIsLoading(false);
       } else {
-        console.log("URL does not contain authentication tokens");
         setIsLoggedIn(false);
       }
     } catch (error) {
@@ -155,7 +137,6 @@ export default function AuthProvider({ children }) {
       );
 
       if (response.success) {
-        console.log("Password login successful");
         setUser(response.user);
         setAuthToken(response.session.access_token);
         setIsLoggedIn(true);
@@ -258,7 +239,6 @@ export default function AuthProvider({ children }) {
       );
 
       if (response.success) {
-        console.log("Password registration successful");
         setUser(response.user);
         if (response.session) {
           setAuthToken(response.session.access_token);
@@ -425,7 +405,6 @@ export default function AuthProvider({ children }) {
         `/api/v1/delete?user_id=${session.user.id}`
       );
 
-      console.log("Backend logout response:", response.data);
 
       // Sign out from Supabase
       await supabaseAuthService.signOut();
@@ -476,7 +455,6 @@ export default function AuthProvider({ children }) {
     // Set up deep link handler for when app is already open
     const subscription = Linking.addEventListener("url", (event) => {
       const url = event.url;
-      console.log("Deep link received while app is open:", url);
 
       // Force immediate processing of the deep link
       if (url) {
@@ -489,9 +467,7 @@ export default function AuthProvider({ children }) {
 
     // Check for initial URL (app opened via deep link)
     Linking.getInitialURL().then((url) => {
-      console.log("deep link opeaned the app.");
       if (url) {
-        console.log("App opened via deep link:", url);
         handleDeepLink(url);
       }
     });

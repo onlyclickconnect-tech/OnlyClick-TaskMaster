@@ -265,9 +265,10 @@ For questions about this privacy policy, please contact us through the app.`
         onPress={onToggleAuthMode}
         activeOpacity={0.7}
       >
-        <Text style={styles.switchModeText}>
+        {/*Uncomment this in case you want to enable magic link. for new we are useing ph and email only*/}
+        {/* <Text style={styles.switchModeText}>
           Or sign in with magic link instead
-        </Text>
+        </Text> */}
       </TouchableOpacity>
 
 

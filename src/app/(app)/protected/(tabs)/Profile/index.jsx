@@ -41,7 +41,6 @@ export default function ProfilePage() {
   useEffect(() => {
     const getdata = async () => {
       const { data, error } = await supabase.auth.session();
-      console.log(userData);
 
       console.error("data", data.session);
       console.error("error", error);

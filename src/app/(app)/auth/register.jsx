@@ -85,7 +85,6 @@ export default function Register() {
                 setError(result.error || 'Registration failed. Please try again.');
             }
         } catch (error) {
-            console.error('Registration error:', error.message);
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setIsLoading(false);

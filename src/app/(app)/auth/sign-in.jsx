@@ -104,7 +104,6 @@ export default function SignIn() {
                 setError(result.error || 'Failed to sign in. Please check your credentials.');
             }
         } catch (error) {
-            console.error('Password sign in error:', error.message);
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setIsLoading(false);
@@ -141,7 +140,6 @@ export default function SignIn() {
                 setError(result.error || 'Failed to send OTP. Please try again.');
             }
         } catch (error) {
-            console.error('Magic link error:', error.message);
             setError('An unexpected error occurred. Please try again.');
         } finally {
             setIsLoading(false);

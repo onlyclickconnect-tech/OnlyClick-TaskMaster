@@ -16,7 +16,6 @@ export const AppStatesProvider = ({ children }) => {
     const getAppFirstOpenState = async () => {
       try {
         const appFirstOpenState = await AsyncStorage.getItem("appFirstOpenState");
-        console.log("App first open state from storage:", appFirstOpenState);
         setIsAppOpenedFirstTime(appFirstOpenState !== "false");
       } catch (error) {
         console.error("Error getting app first open state:", error);
@@ -30,7 +29,6 @@ export const AppStatesProvider = ({ children }) => {
     const getProfileCompletedState = async () => {
       try {
         const profileCompletedState = await AsyncStorage.getItem("profileCompleted");
-        console.log("Profile completed state from storage:", profileCompletedState);
         setIsProfileCompleted(profileCompletedState === "true");
       } catch (error) {
         console.error("Error getting profile completed state:", error);
@@ -45,7 +43,6 @@ export const AppStatesProvider = ({ children }) => {
       const setAppFirstOpenState = async () => {
         try {
           await AsyncStorage.setItem("appFirstOpenState", isAppOpenedFirstTime ? "true" : "false");
-          console.log("App first open state set to:", isAppOpenedFirstTime ? "true" : "false");
         } catch (error) {
           console.error("Error setting app first open state:", error);
         }
@@ -62,7 +59,6 @@ export const AppStatesProvider = ({ children }) => {
   const markAppOpened = async () => {
     await AsyncStorage.setItem("appFirstOpenState", "false");
     setIsAppOpenedFirstTime(false);
-    console.log("App marked as not first time open");
   };
 
   return (

@@ -8,7 +8,6 @@ export const getTrainingVideos = async (userCategory) => {
       .select("*")
       .or(`category.eq.All,category.eq.${userCategory}`);
 
-    console.log("Fetched training videos:", data, error);
     return data || [];
 
   } catch (error) {

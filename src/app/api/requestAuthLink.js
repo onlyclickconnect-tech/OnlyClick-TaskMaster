@@ -15,12 +15,10 @@ export const requestAuthLink = async (email) => {
       };
     }
 
-    console.log(data);
     // If response doesn't have expected structure
     throw new Error(data.data.message || 'Failed to send magic link');
 
   } catch (error) {
-    console.log("requestAuthLink error:", error.message);
     return {
       error: error || 'Network error',
       success: false

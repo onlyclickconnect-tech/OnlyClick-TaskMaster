@@ -20,7 +20,6 @@ export default function BookingDetail() {
   };
   const [otp, setOtp] = useState("");
   const { screenHeight, screenWidth } = useDimension();
-  console.log("hello world this is servicedetail page");
   return (
     <View style={{ height: screenHeight, width: screenWidth }}>
       {/* box1 */}
