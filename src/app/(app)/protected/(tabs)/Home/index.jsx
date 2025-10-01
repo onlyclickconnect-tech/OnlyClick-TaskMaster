@@ -21,7 +21,7 @@ export default function Home() {
       } 
     }
     getdata()
-    console.log(authToken);
+  
   }, [userData])
 
 

@@ -4,50 +4,7 @@ import React from "react";
 import JobAlertBox from "./JobAlertBox";
 
 export default function JobAlert() {
-  const notifications = [
-    {
-      date: "Today",
-      customerName: "User1",
-      serviceName: "Service1",
-      location: "Very long and tedious location1",
-      image: "https://picsum.photos/200/300",
-    },
-    {
-      date: "Tomorrow",
-      customerName: "User2",
-      serviceName: "Service2",
-      location: "Very long and tedious location2",
-      image: "https://picsum.photos/201/301",
-    },
-    {
-      date: "Yesterday",
-      customerName: "User3",
-      serviceName: "Service3",
-      location: "Very long and tedious location3",
-      image: "https://picsum.photos/202/302",
-    },
-    {
-      date: "Yesterday",
-      customerName: "User3",
-      serviceName: "Service3",
-      location: "Very long and tedious location3",
-      image: "https://picsum.photos/203/303",
-    },
-    {
-      date: "Yesterday",
-      customerName: "User3",
-      serviceName: "Service3",
-      location: "Very long and tedious location3",
-      image: "https://picsum.photos/204/304",
-    },
-    {
-      date: "Yesterday",
-      customerName: "User3",
-      serviceName: "Service3",
-      location: "Very long and tedious location3",
-      image: "https://picsum.photos/205/305",
-    },
-  ];
+  const notifications = [];
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "white" }}>
       <View

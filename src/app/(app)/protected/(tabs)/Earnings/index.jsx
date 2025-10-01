@@ -121,7 +121,6 @@ export default function Earnings() {
           'https://picsum.photos/200/300?random=cash',
         service: transactionService,
         subtitle: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        remarks: transaction.remarks || null,
         date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         amount: transaction.amount || 0,
         type: transaction.type || 'cash', // Changed from 'credit' to 'cash'
@@ -244,7 +243,7 @@ Please process this withdrawal request.`;
 
       try {
         const url = whatsappUrls[urlIndex];
-        console.log(`Trying WhatsApp URL ${urlIndex + 1}:`, url);
+      
         
         await Linking.openURL(url);
         
@@ -257,7 +256,7 @@ Please process this withdrawal request.`;
           [{ text: 'OK' }]
         );
       } catch (error) {
-        console.log(`WhatsApp URL ${urlIndex + 1} failed:`, error);
+      
         // Try next URL format
         tryOpenWhatsApp(urlIndex + 1);
       }

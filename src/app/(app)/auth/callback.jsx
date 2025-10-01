@@ -8,7 +8,7 @@ export default function authCallback() {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('Callback page focused, redirecting to index...');
+     
       // Use a small timeout to ensure proper mounting
       const timer = setTimeout(() => {
         router.replace('/');

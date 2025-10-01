@@ -23,7 +23,7 @@ export default function SignIn() {
     // If user is already logged in, redirect to home
     useEffect(() => {
         if (isLoggedIn) {
-            console.log('User already logged in, redirecting to home');
+          
             router.replace('/(app)/protected/(tabs)/Home');
         }
     }, [isLoggedIn]);
@@ -99,7 +99,7 @@ export default function SignIn() {
             
             if (result.success) {
                 // Auth provider will handle the redirect based on user state
-                console.log('Password sign in successful');
+              
             } else {
                 setError(result.error || 'Failed to sign in. Please check your credentials.');
             }

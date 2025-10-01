@@ -17,7 +17,7 @@ export default function ProfileSetup() {
   });
   const [errors, setErrors] = useState({});
 
-  console.log(authToken);
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -60,7 +60,7 @@ export default function ProfileSetup() {
         throw new Error(saveResponse.message || 'Failed to save profile');
       }
 
-      console.log("Profile saved successfully, updating auth state");
+    
       
       // Update the userData in auth context
       const updatedUserData = {
@@ -76,7 +76,7 @@ export default function ProfileSetup() {
       // Mark profile as completed in app states
       await markProfileCompleted();
       
-      console.log("Navigating to home page");
+   
       setIsLoading(false);
       
       // Navigate to main app immediately
