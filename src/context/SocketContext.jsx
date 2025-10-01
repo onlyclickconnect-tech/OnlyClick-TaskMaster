@@ -20,18 +20,7 @@ const SocketProvider = ({ children }) => {
     }
   }, [isLoggedIn]);
 
-  // Dummy socket methods
-  const emitEvent = (event, data) => {
-    console.log('Dummy socket emit:', event, data);
-  };
-
-  const onEvent = (event, callback) => {
-    console.log('Dummy socket on:', event);
-  };
-
-  const offEvent = (event, callback) => {
-    console.log('Dummy socket off:', event);
-  };
+ 
 
   return (
     <SocketContext.Provider 

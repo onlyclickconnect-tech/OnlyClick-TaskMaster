@@ -95,7 +95,6 @@ export default function Index() {
       if (errors) throw errors;
       setAvailable(data?.data || []);
     } catch (error) {
-      console.error('Error refreshing available jobs:', error);
     }
   };
 
@@ -110,7 +109,6 @@ export default function Index() {
       try {
         await refreshAllJobs();
       } catch (error) {
-        console.error('Error loading initial data:', error);
       } finally {
         setInitialLoading(false);
       }
@@ -144,17 +142,12 @@ export default function Index() {
     try {
       await refreshAllJobs();
     } catch (error) {
-      console.error('Error during refresh:', error);
     } finally {
       setRefreshing(false);
     }
   };
 
   const openService = (item, modeOverride) => {
-    console.log('=== OPEN SERVICE CALLED ===');
-    console.log('item:', item);
-    console.log('modeOverride:', modeOverride);
-    console.log('activeTab before override:', activeTab);
     
     setSelectedService(item);
     setServiceModalMode(modeOverride || activeTab); // Set modal mode separately
@@ -163,7 +156,6 @@ export default function Index() {
     }
     setServiceModalVisible(true);
     
-    console.log('Modal should open with mode:', modeOverride || activeTab);
   };
 
   // Group jobs by customer function (using userId and cartUuid)
@@ -222,13 +214,9 @@ export default function Index() {
   };
 
   const onEnterOtp = (item) => {
-    console.log('=== ON ENTER OTP CALLED ===');
-    console.log('activeTab:', activeTab);
-    console.log('item:', item);
     
     // If user is in Available section and clicks OTP, move them to Pending
     if (activeTab === 'Available') {
-      console.log('User is in Available tab, switching to Pending');
       // Move job from Available to Pending
       // setAvailable(prev => prev.filter(i => i._id !== item._id));
       // setPending(prev => [{ ...item, status: 'Accepted', startTime: new Date().toLocaleTimeString() }, ...prev]);
@@ -241,15 +229,12 @@ export default function Index() {
         }, 200);
       }, 300);
     } else {
-      console.log('User is in Pending tab, opening service modal');
       // Normal OTP flow for Pending items
       openService(item, 'Pending');
     }
   };
 
   const handleAccept = (svc) => {
-    console.log("=== HANDLE ACCEPT CALLED ===");
-    console.log("svc", svc);
     
     // Check if this is a grouped job (has jobs array)
     const isGroupedJob = svc.jobs && Array.isArray(svc.jobs);
@@ -337,7 +322,6 @@ export default function Index() {
                 });
               }
             } catch (err) {
-              console.error('Error accepting jobs:', err);
               showCustomAlert({
                 title: 'Network Error',
                 message: 'Could not connect to server. Please check your internet connection and try again.',
@@ -361,8 +345,6 @@ export default function Index() {
   };
 
   const handleComplete = async (svc) => {
-    console.log('=== HANDLE COMPLETE CALLED ===');
-    console.log('Completed service:', svc);
     
     try {
       // Refresh all jobs to get updated status from server
@@ -387,7 +369,6 @@ export default function Index() {
         });
       }, 300);
     } catch (error) {
-      console.error('Error refreshing jobs after completion:', error);
       // Still show success message even if refresh fails
       setServiceModalVisible(false);
       setTimeout(() => {

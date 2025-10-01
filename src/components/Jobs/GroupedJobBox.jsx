@@ -39,7 +39,6 @@ const GroupedJobBox = ({ customerGroup, onAccept, onPress, isPending = false }) 
         
         return `${displayHour}:${minutes} ${ampm} • ${dateStr}`;
       } catch (e) {
-        console.log('Error parsing timestamp:', e);
         return timeSlot;
       }
     }

@@ -32,7 +32,6 @@ function Header() {
   const styles = headerStyle();
 
   const searchService = async () => {
-    console.log("user searched");
   };
 
   useEffect(() => {
@@ -193,7 +192,6 @@ function Header() {
             <Badge
               pressable={true}
               onPress={() => {
-                // console.log("Pressed");
                 router.navigate("/protected/Notifications");
               }}
               hasBadge={hasNotification}

@@ -67,7 +67,6 @@ export default function Data({ userStats, isLoading }) {
     setIsActive(value);
     // TODO: Here you would make an API call to update the user's status
     // Example: await userService.updateStatus(value);
-    console.log(`Worker status changed to: ${value ? 'Active' : 'Inactive'}`);
   };
   const styles = StyleSheet.create({
     container: {

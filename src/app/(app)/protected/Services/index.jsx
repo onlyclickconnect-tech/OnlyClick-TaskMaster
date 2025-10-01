@@ -137,7 +137,6 @@ export default function ServicesPage() {
 
     try {
       // TODO: Replace with real API call
-      console.log('Submitting price request', payload);
       // Simulate success
       if (Platform.OS === 'web') {
         alert(`Requested price change for ${requestService.title} to ₹${parsed}`);
@@ -251,7 +250,7 @@ export default function ServicesPage() {
             source={item.image || {uri: "https://res.cloudinary.com/dsjcgs6nu/image/upload/v1751596604/ChatGPT_Image_Jul_3_2025_10_18_12_PM_xqu38i.png"}} 
             style={styles.serviceImage}
             resizeMode="cover"
-            onError={e => console.log(e.nativeEvent?.error)}
+            onError={e => console.error(e.nativeEvent?.error)}
           />
           <View style={styles.imageOverlay}>
             <TouchableOpacity style={styles.favoriteButton}>

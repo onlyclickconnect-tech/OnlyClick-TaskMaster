@@ -160,12 +160,10 @@ export default function LeftPage() {
     ],
   ]);
   const pendingData = data.get("Pending");
-  //   console.log(pendingData);
   let arrayData = [];
   Array.from(pendingData, (data) => {
     arrayData = [...arrayData, data];
   });
-  //   console.log(arrayData);
 
   const { screenHeight, screenWidth } = useDimension();
   return (

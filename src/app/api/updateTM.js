@@ -3,7 +3,6 @@
 import api from "./api";
 
 export const updateTM = async (dataObj)=>{
-    console.log(dataObj);
     try{
         const {data, error} = await api.post('/api/v1/updateTM', {dataObj});
         if(error){
@@ -11,7 +10,6 @@ export const updateTM = async (dataObj)=>{
         }
         return{data};
     }catch(error){
-        console.log("error inserting/updating user: ", error);
         return {error};
     }
 }

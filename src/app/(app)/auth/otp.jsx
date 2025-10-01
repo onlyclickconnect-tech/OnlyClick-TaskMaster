@@ -65,7 +65,6 @@ export default function OTP() {
         setActiveIndex(0);
       }
     } catch (error) {
-      console.error('OTP verification error:', error);
       setError('An unexpected error occurred. Please try again.');
       setOtp('');
       setActiveIndex(0);
@@ -102,7 +101,6 @@ export default function OTP() {
           Alert.alert('Error', result.error || 'Failed to resend OTP. Please try again.');
         }
       } catch (error) {
-        console.error('Resend OTP error:', error);
         Alert.alert('Error', 'An unexpected error occurred. Please try again.');
       } finally {
         setIsLoading(false);
