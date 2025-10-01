@@ -5,12 +5,12 @@ import { supabase } from '../data/supabaseClient';
 
 class SupabaseAuthService {
   // Sign in with email and password
-  async signInWithPassword(email, password) {
+  async signInWithPassword(ph_no, password) {
     try {
       console.log('Signing in with email and password...');
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: `${ph_no}@taskmaster.com`,
         password,
       });
 
