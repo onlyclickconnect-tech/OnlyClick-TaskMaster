@@ -343,41 +343,98 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
     setSubmitting(true);
     
     try {
-      let results;
+      let results = [];
+      let successCount = 0;
+      let failCount = 0;
       
       if (isGroupedJob && service.jobs) {
-        // Handle grouped jobs - submit OTP for each job
-        const otpPromises = service.jobs.map(job => {
-          const requestPayload = {
-            _id: job._id || job.id,
-            otp: otp
-          };
-          return api.post('api/v1/verifyJobComplete', requestPayload);
-        });
+        // Handle grouped jobs - submit OTP for each job sequentially
+        console.log('Processing grouped jobs sequentially for OTP verification');
         
-        results = await Promise.allSettled(otpPromises);
+        for (let i = 0; i < service.jobs.length; i++) {
+          const job = service.jobs[i];
+          try {
+            const requestPayload = {
+              _id: job._id || job.id,
+              otp: otp
+            };
+            
+            console.log(`Verifying OTP for job ${i + 1}/${service.jobs.length}:`, requestPayload);
+            
+            // Update processing message to show progress
+            showCustomAlert({
+              title: 'Verifying OTP',
+              message: `Processing job ${i + 1} of ${service.jobs.length}...\nPlease wait while we verify your OTP.`,
+              type: 'info',
+              processing: true,
+              showCancel: false,
+              buttons: []
+            });
+            
+            const response = await api.post('api/v1/verifyJobComplete', requestPayload);
+            
+            if (response?.data?.success) {
+              successCount++;
+              results.push({ status: 'fulfilled', value: response, reason: null });
+              console.log(`Job ${i + 1} OTP verified successfully`);
+            } else {
+              failCount++;
+              results.push({ status: 'rejected', value: null, reason: 'Verification failed' });
+              console.log(`Job ${i + 1} OTP verification failed`);
+            }
+            
+            // Add delay between requests to prevent race conditions (except for last item)
+            if (i < service.jobs.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+          } catch (error) {
+            failCount++;
+            results.push({ status: 'rejected', value: null, reason: error });
+            console.error(`Failed to verify OTP for job ${i + 1}:`, error);
+            
+            // Continue with next job even if one fails
+            if (i < service.jobs.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          }
+        }
+        
+        console.log(`Grouped OTP verification complete: ${successCount} successful, ${failCount} failed`);
+        
       } else {
         // Handle single job
         const requestPayload = {
-          _id: service.id || service.id,  // Booking ID
+          _id: service.id || service._id,  // Booking ID
           otp: otp  // OTP entered by user
         };
         
+        console.log('=== MAKING API CALL ===');
+        console.log('API URL: api/v1/verifyJobComplete');
+        console.log('Request payload:', requestPayload);
         
         const response = await api.post('api/v1/verifyJobComplete', requestPayload);
-        results = [{ status: 'fulfilled', value: response, reason: null }];
+        
+        if (response?.data?.success) {
+          successCount = 1;
+          failCount = 0;
+          results = [{ status: 'fulfilled', value: response, reason: null }];
+        } else {
+          successCount = 0;
+          failCount = 1;
+          results = [{ status: 'rejected', value: null, reason: 'Verification failed' }];
+        }
       }
       
       setSubmitting(false);
       hideCustomAlert();
       
-      // Process results
-      const successful = results.filter(result => 
-        result.status === 'fulfilled' && result.value?.data?.success
-      ).length;
+      // Process results using the counts we calculated
+      const successful = successCount;
+      const failed = failCount;
+      const jobCount = isGroupedJob ? service.jobs.length : 1;
       
-      const failed = jobCount - successful;
-      
+      console.log(`OTP verification completed: ${successful} successful, ${failed} failed`);
       
       if (successful > 0) {
         setOtp(''); // Clear OTP input
