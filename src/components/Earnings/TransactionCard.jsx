@@ -19,7 +19,7 @@ export default function TransactionCard({ data, onItemPress }) {
           <Text style={styles.year}>{data.year}</Text>
           <Text style={styles.month}>{data.month}</Text>
         </View>
-        <Text style={styles.total}>{formatAmount(data.total)}</Text>
+        <Text style={styles.total}>{}</Text>
       </View>
       <View style={styles.transactionsList}>
         {data.entries.map((transaction, index) => (

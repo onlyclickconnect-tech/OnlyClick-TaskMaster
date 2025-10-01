@@ -2,15 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Dimensions,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   PanResponder,
+  Platform,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import api from '../../app/api/api';
 import CustomAlert from '../common/CustomAlert';
@@ -21,6 +25,10 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
   const [submitting, setSubmitting] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollViewRef = useRef(null);
+  const otpInputRef = useRef(null);
 
   // Check if this is a grouped job
   const isGroupedJob = service && service.jobs && Array.isArray(service.jobs);
@@ -220,10 +228,50 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
       // slide sheet up when opened
       translateY.setValue(500);
       Animated.timing(translateY, { toValue: 0, duration: 230, useNativeDriver: true }).start();
+      
+      // Auto-focus OTP input for pending jobs
+      if (mode === 'Pending') {
+        setTimeout(() => {
+          // This will help ensure the keyboard opens and OTP is visible
+          setOtp(''); // Clear any existing value to ensure focus works
+          otpInputRef.current?.focus();
+        }, 300);
+      }
     } else {
       translateY.setValue(0);
     }
   }, [visible, mode]);
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardVisible(true);
+        setKeyboardHeight(e.endCoordinates.height);
+        
+        // Scroll to OTP input when keyboard opens (for pending jobs)
+        if (mode === 'Pending' && scrollViewRef.current) {
+          setTimeout(() => {
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+          }, 100);
+        }
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, [mode]);
 
   if (!service) return null;
 
@@ -511,8 +559,20 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
 
   return (
     <Modal visible={visible} animationType="none" transparent presentationStyle="overFullScreen">
-      <View style={styles.backdrop}>
-        <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
+      <KeyboardAvoidingView 
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <Animated.View 
+          style={[
+            styles.container, 
+            { 
+              transform: [{ translateY }],
+              maxHeight: keyboardVisible ? Dimensions.get('window').height - keyboardHeight - 50 : '85%'
+            }
+          ]}
+        >
           {/* Enhanced drag handle - only attach pan responder here */}
           <View style={styles.dragHandle} {...panResponder.panHandlers}>
             <View style={styles.dragBar} />
@@ -524,9 +584,12 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
           </View>
 
           <ScrollView 
+            ref={scrollViewRef}
             style={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             bounces={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={keyboardVisible ? { paddingBottom: keyboardHeight + 20 } : null}
           >
             {/* Move OTP section to top for pending jobs */}
             {mode === 'Pending' && (
@@ -538,6 +601,7 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
                   }
                 </Text>
                 <TextInput
+                  ref={otpInputRef}
                   value={otp}
                   onChangeText={setOtp}
                   placeholder="Enter 4-digit OTP"
@@ -728,7 +792,7 @@ export default function ServiceDetail({ visible, onClose, service, mode = 'Pendi
             )}
           </View>
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Custom Alert */}
       <CustomAlert

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 import { useAuth } from "../../context/AuthProvider";
-import { useBookings } from "../../context/bookingsContext";
 import useDimension from "../../hooks/useDimensions";
 import Text from "../ui/Text";
 
@@ -58,6 +57,13 @@ export default function Info({ userStats, isLoading }) {
   const fallbackImageUri = "https://avatar.windsor.io/serviceprovider";
   const primaryService = userData?.categories || "General Services";
   const userIdDisplay = userData?.taskmasterId || userData?.id|| "TM001";
+  
+  // Define missing variables
+  const displayPhone = userData?.phoneNumber || userData?.ph_no || "+91 XXXXXXXXXX";
+  const displayEmail = userData?.email || user?.email || "email@example.com";
+  const totalCompletedJobs = userStats?.completedBookings || userStats?.totalCompletedJobs || 0;
+  const totalInProgressJobs = userStats?.pendingBookings || userStats?.totalInProgressJobs || 0;
+  const completionRate = totalCompletedJobs > 0 ? Math.round((totalCompletedJobs / (totalCompletedJobs + totalInProgressJobs)) * 100) : 0;
   if (isLoading) {
 
     return (
@@ -65,7 +71,7 @@ export default function Info({ userStats, isLoading }) {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3898b3" />
           <Text style={{ marginTop: 10, color: "#666" }}>
-            {isLoading ? "Loading profile..." : bookingsLoading ? "Loading jobs data..." : "Loading taskmaster data..."}
+            Loading profile...
           </Text>
         </View>
       </View>

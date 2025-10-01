@@ -44,6 +44,7 @@ export default function Index() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [sortBy, setSortBy] = useState('Recent');
+  const [acceptingJob, setAcceptingJob] = useState(false); // Add loading state for job acceptance
 
   const filters = ['All', 'High Pay', 'Nearby', 'Urgent', 'Regular Customer'];
   const sortOptions = ['Recent', 'Distance', 'Payment', 'Rating'];
@@ -268,16 +269,9 @@ export default function Index() {
           text: isGroupedJob ? 'Accept All Jobs' : 'Accept Job',
           onPress: async () => {
             try {
-              // Show loading state
+              // Set loading state immediately
+              setAcceptingJob(true);
               hideCustomAlert();
-              showCustomAlert({
-                title: 'Processing...',
-                message: isGroupedJob ? `Accepting ${jobCount} jobs, please wait...` : 'Accepting job, please wait...',
-                type: 'info',
-                processing: true,
-                showCancel: false,
-                buttons: []
-              });
 
               let results;
               if (isGroupedJob) {
@@ -291,8 +285,6 @@ export default function Index() {
                 const { data, error } = await api.post('api/v1/acceptJob', svc);
                 results = [{ status: error ? 'rejected' : 'fulfilled', value: data, reason: error }];
               }
-              
-              hideCustomAlert();
 
               const successful = results.filter(result => 
                 result.status === 'fulfilled' && result.value?.data?.success
@@ -345,7 +337,6 @@ export default function Index() {
                 });
               }
             } catch (err) {
-              hideCustomAlert();
               console.error('Error accepting jobs:', err);
               showCustomAlert({
                 title: 'Network Error',
@@ -359,6 +350,9 @@ export default function Index() {
                   }
                 ]
               });
+            } finally {
+              // Clear loading state
+              setAcceptingJob(false);
             }
           }
         }
@@ -740,6 +734,24 @@ export default function Index() {
         jobDetails={alertConfig.jobDetails}
         processing={alertConfig.processing}
       />
+
+      {/* Loading Overlay */}
+      <Modal
+        visible={acceptingJob}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4ab9cf" />
+            <Text style={styles.loadingTitle}>Processing Job Acceptance</Text>
+            <Text style={styles.loadingMessage}>
+              Please wait while we process your request...
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1043,5 +1055,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    backgroundColor: '#fff',
+    padding: 32,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginHorizontal: 40,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loadingMessage: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

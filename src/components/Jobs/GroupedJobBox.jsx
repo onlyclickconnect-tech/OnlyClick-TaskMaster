@@ -163,7 +163,10 @@ const GroupedJobBox = ({ customerGroup, onAccept, onPress, isPending = false }) 
             </View>
           )}
 
-          <TouchableOpacity style={[styles.acceptButton, isPending && styles.otpButton]} onPress={onAccept}>
+          <TouchableOpacity 
+            style={[styles.acceptButton, isPending && styles.otpButton]} 
+            onPress={onAccept}
+          >
             <Text style={styles.acceptButtonText}>
               {isPending ? 'Enter OTP' : 'Accept All'}
             </Text>

@@ -34,7 +34,7 @@ export default function Earnings() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const filters = ['All', 'Credit', 'Debit'];
+  const filters = ['All', 'Credit', 'Debit', 'Cash'];
 
   const [data, setData] = useState({
     availableBalance: 0,
@@ -94,21 +94,37 @@ export default function Earnings() {
         };
       }
 
+      // Create more descriptive transaction titles and services based on backend data
+      // This maps backend transaction data to user-friendly display names
+      let transactionTitle, transactionService;
+      
+      if (transaction.type === 'credit') {
+        transactionTitle = 'Payment Received';
+        transactionService = 'Job Payment from OnlyClick';
+      } else if (transaction.type === 'debit') {
+        transactionTitle = 'Payment Withdrawn';
+        transactionService = 'Withdrawal Request';
+      } else {
+        // For null or undefined type, show as cash transaction
+        transactionTitle = 'Cash';
+        transactionService = 'Customer to TaskMaster';
+      }
+
       acc[key].entries.push({
         id: transaction.idx,
-        name: transaction.type === 'credit' ? 'Payment Received' : 'Bank Transfer',
-        title: transaction.type === 'credit' ? 'Payment Received' : 'Bank Transfer',
+        name: transactionTitle,
+        title: transactionTitle,
         image: transaction.type === 'credit' ? 
           'https://picsum.photos/200/300?random=payment' : 
-          'https://picsum.photos/200/300?random=bank',
-        service: transaction.type === 'credit' ? 
-          'Job Payment' : 
-          `Withdrawal - ${transaction.direction || 'Bank Transfer'}`,
+          transaction.type === 'debit' ?
+          'https://picsum.photos/200/300?random=bank' :
+          'https://picsum.photos/200/300?random=cash',
+        service: transactionService,
         subtitle: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         remarks: transaction.remarks || null,
         date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         amount: transaction.amount || 0,
-        type: transaction.type || 'credit',
+        type: transaction.type || 'cash', // Changed from 'credit' to 'cash'
         status: 'completed',
         transactionId: `${transaction.id}`,
         remarks: transaction.remarks || 'N/A'
@@ -195,12 +211,44 @@ Time: ${new Date().toLocaleTimeString('en-IN')}
 
 Please process this withdrawal request.`;
 
-    const whatsappUrl = `whatsapp://send?phone=${companyPhoneNumber}&text=${encodeURIComponent(message)}`;
+    // Try multiple WhatsApp URL formats - try opening directly instead of checking canOpenURL first
+    const whatsappUrls = [
+      `whatsapp://send?phone=${companyPhoneNumber}&text=${encodeURIComponent(message)}`,
+      `https://wa.me/${companyPhoneNumber.replace('+', '')}?text=${encodeURIComponent(message)}`,
+      `https://api.whatsapp.com/send?phone=${companyPhoneNumber}&text=${encodeURIComponent(message)}`
+    ];
 
-    // Try to open WhatsApp
-    Linking.canOpenURL(whatsappUrl).then(supported => {
-      if (supported) {
-        Linking.openURL(whatsappUrl);
+    const tryOpenWhatsApp = async (urlIndex = 0) => {
+      if (urlIndex >= whatsappUrls.length) {
+        // All methods failed - show manual contact option
+        Alert.alert(
+          'Unable to Open WhatsApp',
+          'Please send this withdrawal request manually to our support team.',
+          [
+            { text: 'Copy Message', onPress: () => {
+              // Copy message to clipboard (you might need to add Clipboard import)
+              // For now, just show the message
+              Alert.alert('Message to Send', message);
+            }},
+            { text: 'Contact Support', onPress: () => {
+              // Try to call support
+              Linking.openURL(`tel:+919121377419`).catch(() => {
+                Alert.alert('Support Contact', 'Call: +91 9121377419');
+              });
+            }},
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+        return;
+      }
+
+      try {
+        const url = whatsappUrls[urlIndex];
+        console.log(`Trying WhatsApp URL ${urlIndex + 1}:`, url);
+        
+        await Linking.openURL(url);
+        
+        // If we reach here, the URL opened successfully
         setWithdrawAmount('');
         setWithdrawModalVisible(false);
         Alert.alert(
@@ -208,17 +256,15 @@ Please process this withdrawal request.`;
           'Your withdrawal request has been sent to our team via WhatsApp. We will process it within 24 hours.',
           [{ text: 'OK' }]
         );
-      } else {
-        Alert.alert(
-          'WhatsApp Not Found',
-          'Please install WhatsApp to send withdrawal requests.',
-          [{ text: 'OK' }]
-        );
+      } catch (error) {
+        console.log(`WhatsApp URL ${urlIndex + 1} failed:`, error);
+        // Try next URL format
+        tryOpenWhatsApp(urlIndex + 1);
       }
-    }).catch(err => {
-      console.error('Error opening WhatsApp:', err);
-      Alert.alert('Error', 'Unable to open WhatsApp. Please try again.');
-    });
+    };
+
+    // Start trying URLs
+    tryOpenWhatsApp();
   };
 
   const toggleAutoPayout = () => {
@@ -244,6 +290,7 @@ Please process this withdrawal request.`;
       if (activeFilter === 'All') return true;
       if (activeFilter === 'Credit') return entry.type === 'credit';
       if (activeFilter === 'Debit') return entry.type === 'debit';
+      if (activeFilter === 'Cash') return entry.type === 'cash';
       return true;
     })
   })).filter(month => month.entries.length > 0);
@@ -476,23 +523,31 @@ Please process this withdrawal request.`;
             
             <View style={styles.receiptIcon}>
               <Ionicons 
-                name={selectedTx?.type === 'credit' ? 'checkmark-circle' : 'arrow-down-circle'} 
+                name={selectedTx?.type === 'credit' ? 'checkmark-circle' : 
+                     selectedTx?.type === 'debit' ? 'arrow-down-circle' : 'cash'} 
                 size={60} 
-                color={selectedTx?.type === 'credit' ? '#27ae60' : '#e74c3c'} 
+                color={selectedTx?.type === 'credit' ? '#27ae60' : 
+                       selectedTx?.type === 'debit' ? '#e74c3c' : '#f39c12'} 
               />
             </View>
             
             <Text style={styles.receiptTitle}>
-              {selectedTx?.type === 'credit' ? 'Payment Received' : 'Money Withdrawn'}
+              {selectedTx?.title || 
+               (selectedTx?.type === 'credit' ? 'Payment Received' : 
+                selectedTx?.type === 'debit' ? 'Payment Withdrawn' : 'Cash')}
             </Text>
             
-            <Text style={[styles.receiptAmount, { color: selectedTx?.type === 'credit' ? '#27ae60' : '#e74c3c' }]}>
-              {selectedTx?.type === 'credit' ? '+' : '-'} {formatAmount(selectedTx?.amount || 0)}
+            <Text style={[styles.receiptAmount, { 
+              color: selectedTx?.type === 'credit' ? '#27ae60' : 
+                     selectedTx?.type === 'debit' ? '#e74c3c' : '#f39c12' 
+            }]}>
+              {selectedTx?.type === 'credit' ? '+' : 
+               selectedTx?.type === 'debit' ? '-' : ''} {formatAmount(selectedTx?.amount || 0)}
             </Text>
             
             <View style={styles.receiptDetails}>
               <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Service</Text>
+                <Text style={styles.receiptLabel}>Type</Text>
                 <Text style={styles.receiptValue}>{selectedTx?.service}</Text>
               </View>
               <View style={styles.receiptRow}>
