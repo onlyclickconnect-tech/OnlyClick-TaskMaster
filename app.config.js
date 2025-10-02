@@ -34,6 +34,19 @@ export default {
       favicon: "./assets/images/mainicon.png",
     },
     plugins: [
+      [
+        "expo-build-properties",
+        {
+          android: {
+            packagingOptions: {
+              excludes: [
+                "**/libanimation-decoder-gif.so",
+                "**/libavif_android.so"
+              ]
+            }
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-location",
@@ -49,15 +62,11 @@ export default {
     extra: {
       router: {},
       eas: {
-        "projectId": "5e84b62b-c0c2-4bbc-9ab2-6b9b124b8ae1"
+        projectId: "fb41cc19-ffd6-495c-a77a-94f9b77a86db"
       },
-      // Environment variables for the app
-      expoPublicSupabaseUrl:
-        process.env.EXPO_PUBLIC_SUPABASE_URL,
-      expoPublicSupabaseAnonKey:
-        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      expoPublicApiUrl:
-        process.env.EXPO_PUBLIC_API_URL
+      expoPublicSupabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      expoPublicSupabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      expoPublicApiUrl: process.env.EXPO_PUBLIC_API_URL
     },
   },
 };
