@@ -85,15 +85,40 @@ const GroupedJobBox = ({ customerGroup, onAccept, onPress, isPending = false }) 
   };
 
   const formattedTimeSlot = formatTimeSlot(timeSlot);
+  
+  // Calculate accurate total from individual job payments (preserve floating point precision)
+  const calculatedTotal = jobs?.reduce((sum, job) => {
+    const jobAmount = typeof job.payment === 'string' ? 
+      parseFloat(job.payment.replace(/[₹,]/g, '')) : 
+      job.payment || 0;
+    return sum + jobAmount;
+  }, 0) || 0;
+  
   const formatAmount = (amount) => {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount.replace('₹', '').replace(',', '')) : amount;
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numAmount);
-};
+    // If amount is already a number, use it directly
+    if (typeof amount === 'number') {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    }
+    
+    // Handle string amounts by removing currency symbol and all commas
+    if (typeof amount === 'string') {
+      const numAmount = parseFloat(amount.replace(/[₹,]/g, ''));
+      if (isNaN(numAmount)) return '₹0.00';
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(numAmount);
+    }
+    
+    return '₹0.00';
+  };
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.header}>
@@ -151,7 +176,7 @@ const GroupedJobBox = ({ customerGroup, onAccept, onPress, isPending = false }) 
       <View style={styles.footer}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Amount:</Text>
-          <Text style={styles.totalAmount}>{formatAmount(totalPayment)}</Text>
+          <Text style={styles.totalAmount}>{formatAmount(calculatedTotal)}</Text>
         </View>
 
         <View style={styles.actions}>
