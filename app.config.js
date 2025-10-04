@@ -27,6 +27,8 @@ export default {
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
       ],
+      compileSdkVersion: 35,
+      targetSdkVersion: 35,
     },
     web: {
       bundler: "metro",
@@ -62,11 +64,13 @@ export default {
     extra: {
       router: {},
       eas: {
+
         projectId: "fb41cc19-ffd6-495c-a77a-94f9b77a86db"
       },
       expoPublicSupabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       expoPublicSupabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       expoPublicApiUrl: process.env.EXPO_PUBLIC_API_URL
+
     },
   },
 };
